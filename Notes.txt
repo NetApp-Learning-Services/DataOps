@@ -1,0 +1,137 @@
+
+These should be demo keys that expire May 8th:
+ 
+NFS
+"GYRNWQPCUQRDNGAAAAAAAAAAAAAA"
+CIFS
+"SSPCXQPCUQRDNGAAAAAAAAAAAAAA"
+iSCSI
+"ENNRXQPCUQRDNGAAAAAAAAAAAAAA"
+SnapRestore
+"OWGKZQPCUQRDNGAAAAAAAAAAAAAA"
+SnapMirror
+"AREZZQPCUQRDNGAAAAAAAAAAAAAA"
+FlexClone
+"MLCOARPCUQRDNGAAAAAAAAAAAAAA"
+SnapVault
+"YFADBRPCUQRDNGAAAAAAAAAAAAAA"
+Volume Encryption
+"AXBLHRPCUQRDNGAAAAAAAAAAAAAA"
+SnapMirror Synchronous
+"KGVDJRPCUQRDNGAAAAAAAAAAAAAA"
+S3
+"SEKAMRPCUQRDNGAAAAAAAAAAAAAA"
+
+
+Exercise 1
+1. place version 5.0.1 kustomize in C:\kube to make sure it is in the PATH
+2. install Trident
+3. install volumesnapshot = need to create a volumesnapshotclass named csi-snapclass see: Exercise 3/Project/test-volume-snapshot-class.yaml
+4. install gateway
+make sure aggregate is assigned to the SVM
+5. install svmsource.yaml for gateway  - issue aggregate not assigned - look for bound in tbc
+6. create a default storage class for kubclus2
+
+Exercise 2 Task 1
+1. Download kubeflow: https://github.com/kubeflow/manifests
+2. start bash terminal
+3. cd Exercise\ 1/kubeflow
+4. Run this in bash command:
+while ! kustomize build example | awk '!/well-defined/' | kubectl apply -f -; do echo "Retrying to apply resources"; sleep 10; done
+
+This takes about 5 mintues to install.
+
+Add HTTPS:
+add metallb install
+add metallb config
+kubectl -n kubeflow edit gateways kubeflow-gateway
+kubectl -n istio-system edit service istio-ingressgateway
+Get the external ip:
+PS C:\Users\Administrator.DEMO\repos\DataOps> kubectl -n istio-system get svc istio-ingressgateway
+NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)                                                                      AGE
+istio-ingressgateway   LoadBalancer   10.106.168.56   192.168.0.245   15021:32179/TCP,80:30387/TCP,443:31800/TCP,31400:32379/TCP,15443:30923/TCP   4d3h
+
+Create a certificate for istio for the external ip
+
+5. Go to K8s extension and check out the new namespaces.
+6. kubectl port-forward svc/istio-ingressgateway -n istio-system 8080:80
+7. open browser to https://localhost:8080 
+8. authenticate as user@example.com with a password 12341234
+
+9. Install python IDE extension
+10.Install juypter IDE extension
+11.Update to Python 3.10 (add to path)
+12.restarted VSCodium - to get updated path
+
+Exercise 2 Task 2
+1. inside Exercise 3/Project enter:  python -m venv .env
+2. Set python interpreter in VSCodium  to be Project/.env/Scripts/python.exe
+3. when open a new terminal - path gets autoset to (.env) 
+4. copy ai-training-run.py into Project folder
+   note: 
+    dataset_volume_pvc_existing: str = "dataset-vol",
+    trained_model_volume_pvc_existing: str = "kfp-model-vol", 
+    --> need to create persistentvolumeclaims for these required volumes
+5. in (.env) terminal, pip install kfp (wait a few minutes)
+6. Run ai-training-run.py using python or the run button
+7. Notice ai-training-run.py.yaml was created
+8. Run ns-pvcs.yaml to create persistentvolumeclaims - namespace: kubeflow-user-example-com
+9. Execute cluster-role-netapp-dataops.yaml
+10.Change namespace to kubeflow-user-example-com in role-binding-kubeflow-netapp-dataops.yaml
+11.Execute role-binding-kubeflow-netapp-dataops.yaml
+12.in the pipeline, select Create experiment.
+13.give the experiment a name and click Next
+14.click one-off for run type
+15.enter ls for data_prep_step_command, train_step_command, and validation_step_command parameters (demo)
+16.Click start
+17.click on run of ai-training-run
+18.as it runs, each step creates a new pod in the namespace
+19.can view the logs of the pods in kubeflow or the extension
+20.look at csi-snapshotter container in trident - look for the PV file name for pvc dataset-vol
+21.reviews logs for each step in the pipeline
+
+
+Checking out profiles in kubeflow
+
+kubectl -n kubeflow get profiles
+kubectl -n kubeflow describe profiles kubeflow-user-example-com
+
+apiVersion: kubeflow.org/v1
+kind: Profile
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kubeflow.org/v1beta1","kind":"Profile","metadata":{"annotations":{},"name":"kubeflow-user-example-com"},"spec":{"owner":{"kind":"User","name":"user@example.com"}}}
+  creationTimestamp: "2023-04-05T18:44:34Z"
+  finalizers:
+  - profile-finalizer
+  generation: 2
+  name: kubeflow-user-example-com
+  resourceVersion: "64702"
+  uid: c99f90a4-844f-475f-a88f-b7f50727f8ea
+spec:
+  owner:
+    kind: User
+    name: user@example.com
+  resourceQuotaSpec: {}
+
+
+Exercise 3
+1. In Kubeflow, create volumes:
+a. train - 5gi
+b. model - 5Gi
+c. eval - 5gi
+d. test - 5gi
+e. prod - 5gi
+
+2. Create a project server - mounting all including model volume (wait about 2 minutes)
+3. note this is notebook CR - running as pod in kubeflow-user-example-com namespace
+4. Upload dataprep.ipynb and requirements.txt
+   - open terminal, type pip list to verify current versions in this container
+5. Run dataprep.ipynb - installed ipynb kernel,  
+6. wait about 15 minutes - walking through the dataprep notebook
+7. Check out snapshots in System Manager, K8s extension (volumesnapshots)
+8. find the volumesnapshot for the dogcat-train volume and identify snapshot in system manager, and volumesnapshotcontents. 
+9. Delete the volumesnapshot and see what happens to the rest. - everything deleted because of deletionpolicy associated with volumesnapshotclass
+10. Run the notebook line that recreates the snapshot
+11. What would happen if you run this again?  Different data in volumes, different snapshots
