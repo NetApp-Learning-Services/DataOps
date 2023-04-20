@@ -2,28 +2,29 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: ai-training-run-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.19, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-06T18:01:18.127798',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-20T20:34:00.667223',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Template for executing
       an AI training run with built-in training dataset traceability and trained model
       versioning", "inputs": [{"default": "helloworld-train", "name": "dataset_volume_pvc_existing",
-      "optional": true, "type": "String"}, {"default": "helloworld-model", "name": "trained_model_volume_pvc_existing",
-      "optional": true, "type": "String"}, {"default": "yes", "name": "execute_data_prep_step__yes_or_no",
-      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
-      "name": "data_prep_step_container_image", "optional": true, "type": "String"},
-      {"default": "<insert command here>", "name": "data_prep_step_command", "optional":
-      true, "type": "String"}, {"default": "/mnt/dataset", "name": "data_prep_step_dataset_volume_mountpoint",
-      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
-      "name": "train_step_container_image", "optional": true, "type": "String"}, {"default":
-      "<insert command here>", "name": "train_step_command", "optional": true, "type":
-      "String"}, {"default": "/mnt/dataset", "name": "train_step_dataset_volume_mountpoint",
-      "optional": true, "type": "String"}, {"default": "/mnt/model", "name": "train_step_model_volume_mountpoint",
-      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
+      "optional": true, "type": "String"}, {"default": "helloworld-model", "name":
+      "trained_model_volume_pvc_existing", "optional": true, "type": "String"}, {"default":
+      "yes", "name": "execute_data_prep_step__yes_or_no", "optional": true, "type":
+      "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3", "name": "data_prep_step_container_image",
+      "optional": true, "type": "String"}, {"default": "<insert command here>", "name":
+      "data_prep_step_command", "optional": true, "type": "String"}, {"default": "/mnt/dataset",
+      "name": "data_prep_step_dataset_volume_mountpoint", "optional": true, "type":
+      "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3", "name": "train_step_container_image",
+      "optional": true, "type": "String"}, {"default": "<insert command here>", "name":
+      "train_step_command", "optional": true, "type": "String"}, {"default": "/mnt/dataset",
+      "name": "train_step_dataset_volume_mountpoint", "optional": true, "type": "String"},
+      {"default": "/mnt/model", "name": "train_step_model_volume_mountpoint", "optional":
+      true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
       "name": "validation_step_container_image", "optional": true, "type": "String"},
       {"default": "<insert command here>", "name": "validation_step_command", "optional":
       true, "type": "String"}, {"default": "/mnt/dataset", "name": "validation_step_dataset_volume_mountpoint",
       "optional": true, "type": "String"}, {"default": "/mnt/model", "name": "validation_step_model_volume_mountpoint",
       "optional": true, "type": "String"}], "name": "AI Training Run"}'}
-  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.19}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20}
 spec:
   entrypoint: ai-training-run
   templates:
@@ -122,7 +123,7 @@ spec:
       - {name: dataset_volume_pvc_existing}
     metadata:
       labels:
-        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
         pipelines.kubeflow.org/enable_caching: "true"
     volumes:
@@ -144,7 +145,7 @@ spec:
       - {name: dataset-snapshot-volume_snapshot_name, path: /volume_snapshot_name.txt}
     metadata:
       labels:
-        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
         pipelines.kubeflow.org/enable_caching: "true"
   - name: model-snapshot
@@ -163,7 +164,7 @@ spec:
       - {name: model-snapshot-volume_snapshot_name, path: /volume_snapshot_name.txt}
     metadata:
       labels:
-        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
         pipelines.kubeflow.org/enable_caching: "true"
   - name: train-model
@@ -185,7 +186,7 @@ spec:
       - {name: trained_model_volume_pvc_existing}
     metadata:
       labels:
-        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
         pipelines.kubeflow.org/enable_caching: "true"
     volumes:
@@ -213,7 +214,7 @@ spec:
       - {name: validation_step_model_volume_mountpoint}
     metadata:
       labels:
-        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
         pipelines.kubeflow.org/enable_caching: "true"
     volumes:
