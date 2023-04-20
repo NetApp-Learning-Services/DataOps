@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: helloworld-train
+  namespace: kubeflow-user-example-com
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: c2-svmai-nas-basic
+  accessModes:
+    - ReadWriteMany
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: helloworld-model
+  namespace: kubeflow-user-example-com
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: c2-svmai-nas-basic
+  accessModes:
+    - ReadWriteMany

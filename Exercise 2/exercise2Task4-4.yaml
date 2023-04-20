@@ -1,0 +1,241 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ai-training-run-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.19, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-06T18:01:18.127798',
+    pipelines.kubeflow.org/pipeline_spec: '{"description": "Template for executing
+      an AI training run with built-in training dataset traceability and trained model
+      versioning", "inputs": [{"default": "helloworld-train", "name": "dataset_volume_pvc_existing",
+      "optional": true, "type": "String"}, {"default": "helloworld-model", "name": "trained_model_volume_pvc_existing",
+      "optional": true, "type": "String"}, {"default": "yes", "name": "execute_data_prep_step__yes_or_no",
+      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
+      "name": "data_prep_step_container_image", "optional": true, "type": "String"},
+      {"default": "<insert command here>", "name": "data_prep_step_command", "optional":
+      true, "type": "String"}, {"default": "/mnt/dataset", "name": "data_prep_step_dataset_volume_mountpoint",
+      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
+      "name": "train_step_container_image", "optional": true, "type": "String"}, {"default":
+      "<insert command here>", "name": "train_step_command", "optional": true, "type":
+      "String"}, {"default": "/mnt/dataset", "name": "train_step_dataset_volume_mountpoint",
+      "optional": true, "type": "String"}, {"default": "/mnt/model", "name": "train_step_model_volume_mountpoint",
+      "optional": true, "type": "String"}, {"default": "nvcr.io/nvidia/tensorflow:21.03-tf1-py3",
+      "name": "validation_step_container_image", "optional": true, "type": "String"},
+      {"default": "<insert command here>", "name": "validation_step_command", "optional":
+      true, "type": "String"}, {"default": "/mnt/dataset", "name": "validation_step_dataset_volume_mountpoint",
+      "optional": true, "type": "String"}, {"default": "/mnt/model", "name": "validation_step_model_volume_mountpoint",
+      "optional": true, "type": "String"}], "name": "AI Training Run"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.19}
+spec:
+  entrypoint: ai-training-run
+  templates:
+  - name: ai-training-run
+    inputs:
+      parameters:
+      - {name: data_prep_step_command}
+      - {name: data_prep_step_container_image}
+      - {name: data_prep_step_dataset_volume_mountpoint}
+      - {name: dataset_volume_pvc_existing}
+      - {name: execute_data_prep_step__yes_or_no}
+      - {name: train_step_command}
+      - {name: train_step_container_image}
+      - {name: train_step_dataset_volume_mountpoint}
+      - {name: train_step_model_volume_mountpoint}
+      - {name: trained_model_volume_pvc_existing}
+      - {name: validation_step_command}
+      - {name: validation_step_container_image}
+      - {name: validation_step_dataset_volume_mountpoint}
+      - {name: validation_step_model_volume_mountpoint}
+    dag:
+      tasks:
+      - name: condition-1
+        template: condition-1
+        when: '"{{inputs.parameters.execute_data_prep_step__yes_or_no}}" == "yes"'
+        arguments:
+          parameters:
+          - {name: data_prep_step_command, value: '{{inputs.parameters.data_prep_step_command}}'}
+          - {name: data_prep_step_container_image, value: '{{inputs.parameters.data_prep_step_container_image}}'}
+          - {name: data_prep_step_dataset_volume_mountpoint, value: '{{inputs.parameters.data_prep_step_dataset_volume_mountpoint}}'}
+          - {name: dataset_volume_pvc_existing, value: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+      - name: dataset-snapshot
+        template: dataset-snapshot
+        dependencies: [condition-1]
+        arguments:
+          parameters:
+          - {name: dataset_volume_pvc_existing, value: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+      - name: model-snapshot
+        template: model-snapshot
+        dependencies: [train-model]
+        arguments:
+          parameters:
+          - {name: trained_model_volume_pvc_existing, value: '{{inputs.parameters.trained_model_volume_pvc_existing}}'}
+      - name: train-model
+        template: train-model
+        dependencies: [dataset-snapshot]
+        arguments:
+          parameters:
+          - {name: dataset_volume_pvc_existing, value: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+          - {name: train_step_command, value: '{{inputs.parameters.train_step_command}}'}
+          - {name: train_step_container_image, value: '{{inputs.parameters.train_step_container_image}}'}
+          - {name: train_step_dataset_volume_mountpoint, value: '{{inputs.parameters.train_step_dataset_volume_mountpoint}}'}
+          - {name: train_step_model_volume_mountpoint, value: '{{inputs.parameters.train_step_model_volume_mountpoint}}'}
+          - {name: trained_model_volume_pvc_existing, value: '{{inputs.parameters.trained_model_volume_pvc_existing}}'}
+      - name: validate-model
+        template: validate-model
+        dependencies: [model-snapshot]
+        arguments:
+          parameters:
+          - {name: dataset_volume_pvc_existing, value: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+          - {name: trained_model_volume_pvc_existing, value: '{{inputs.parameters.trained_model_volume_pvc_existing}}'}
+          - {name: validation_step_command, value: '{{inputs.parameters.validation_step_command}}'}
+          - {name: validation_step_container_image, value: '{{inputs.parameters.validation_step_container_image}}'}
+          - {name: validation_step_dataset_volume_mountpoint, value: '{{inputs.parameters.validation_step_dataset_volume_mountpoint}}'}
+          - {name: validation_step_model_volume_mountpoint, value: '{{inputs.parameters.validation_step_model_volume_mountpoint}}'}
+  - name: condition-1
+    inputs:
+      parameters:
+      - {name: data_prep_step_command}
+      - {name: data_prep_step_container_image}
+      - {name: data_prep_step_dataset_volume_mountpoint}
+      - {name: dataset_volume_pvc_existing}
+    dag:
+      tasks:
+      - name: data-prep
+        template: data-prep
+        arguments:
+          parameters:
+          - {name: data_prep_step_command, value: '{{inputs.parameters.data_prep_step_command}}'}
+          - {name: data_prep_step_container_image, value: '{{inputs.parameters.data_prep_step_container_image}}'}
+          - {name: data_prep_step_dataset_volume_mountpoint, value: '{{inputs.parameters.data_prep_step_dataset_volume_mountpoint}}'}
+          - {name: dataset_volume_pvc_existing, value: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+  - name: data-prep
+    container:
+      args: ['{{inputs.parameters.data_prep_step_command}}']
+      command: [sh, -c]
+      image: '{{inputs.parameters.data_prep_step_container_image}}'
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.data_prep_step_dataset_volume_mountpoint}}',
+        name: dataset}
+    inputs:
+      parameters:
+      - {name: data_prep_step_command}
+      - {name: data_prep_step_container_image}
+      - {name: data_prep_step_dataset_volume_mountpoint}
+      - {name: dataset_volume_pvc_existing}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+    volumes:
+    - name: dataset
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+  - name: dataset-snapshot
+    container:
+      args: ['            python3 -m pip install netapp-dataops-k8s &&             echo
+          ''dataset-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
+          create volume-snapshot --pvc-name={{inputs.parameters.dataset_volume_pvc_existing}}
+          --snapshot-name=dataset-{{workflow.uid}} --namespace={{workflow.namespace}}']
+      command: [/bin/bash, -c]
+      image: python:3
+    inputs:
+      parameters:
+      - {name: dataset_volume_pvc_existing}
+    outputs:
+      artifacts:
+      - {name: dataset-snapshot-volume_snapshot_name, path: /volume_snapshot_name.txt}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: model-snapshot
+    container:
+      args: ['            python3 -m pip install netapp-dataops-k8s &&             echo
+          ''kfp-model-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
+          create volume-snapshot --pvc-name={{inputs.parameters.trained_model_volume_pvc_existing}}
+          --snapshot-name=kfp-model-{{workflow.uid}} --namespace={{workflow.namespace}}']
+      command: [/bin/bash, -c]
+      image: python:3
+    inputs:
+      parameters:
+      - {name: trained_model_volume_pvc_existing}
+    outputs:
+      artifacts:
+      - {name: model-snapshot-volume_snapshot_name, path: /volume_snapshot_name.txt}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+  - name: train-model
+    container:
+      args: ['{{inputs.parameters.train_step_command}}']
+      command: [sh, -c]
+      image: '{{inputs.parameters.train_step_container_image}}'
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.train_step_dataset_volume_mountpoint}}',
+        name: datavol}
+      - {mountPath: '{{inputs.parameters.train_step_model_volume_mountpoint}}', name: modelvol}
+    inputs:
+      parameters:
+      - {name: dataset_volume_pvc_existing}
+      - {name: train_step_command}
+      - {name: train_step_container_image}
+      - {name: train_step_dataset_volume_mountpoint}
+      - {name: train_step_model_volume_mountpoint}
+      - {name: trained_model_volume_pvc_existing}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+    volumes:
+    - name: datavol
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+    - name: modelvol
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.trained_model_volume_pvc_existing}}'}
+  - name: validate-model
+    container:
+      args: ['{{inputs.parameters.validation_step_command}}']
+      command: [sh, -c]
+      image: '{{inputs.parameters.validation_step_container_image}}'
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.validation_step_dataset_volume_mountpoint}}',
+        name: datavol}
+      - {mountPath: '{{inputs.parameters.validation_step_model_volume_mountpoint}}',
+        name: modelvol}
+    inputs:
+      parameters:
+      - {name: dataset_volume_pvc_existing}
+      - {name: trained_model_volume_pvc_existing}
+      - {name: validation_step_command}
+      - {name: validation_step_container_image}
+      - {name: validation_step_dataset_volume_mountpoint}
+      - {name: validation_step_model_volume_mountpoint}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.19
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+    volumes:
+    - name: datavol
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.dataset_volume_pvc_existing}}'}
+    - name: modelvol
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.trained_model_volume_pvc_existing}}'}
+  arguments:
+    parameters:
+    - {name: dataset_volume_pvc_existing, value: helloworld-train}
+    - {name: trained_model_volume_pvc_existing, value: helloworld-model}
+    - name: execute_data_prep_step__yes_or_no
+      value: "yes"
+    - {name: data_prep_step_container_image, value: 'nvcr.io/nvidia/tensorflow:21.03-tf1-py3'}
+    - {name: data_prep_step_command, value: <insert command here>}
+    - {name: data_prep_step_dataset_volume_mountpoint, value: /mnt/dataset}
+    - {name: train_step_container_image, value: 'nvcr.io/nvidia/tensorflow:21.03-tf1-py3'}
+    - {name: train_step_command, value: <insert command here>}
+    - {name: train_step_dataset_volume_mountpoint, value: /mnt/dataset}
+    - {name: train_step_model_volume_mountpoint, value: /mnt/model}
+    - {name: validation_step_container_image, value: 'nvcr.io/nvidia/tensorflow:21.03-tf1-py3'}
+    - {name: validation_step_command, value: <insert command here>}
+    - {name: validation_step_dataset_volume_mountpoint, value: /mnt/dataset}
+    - {name: validation_step_model_volume_mountpoint, value: /mnt/model}
+  serviceAccountName: pipeline-runner
