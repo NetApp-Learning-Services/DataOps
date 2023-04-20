@@ -1,0 +1,10 @@
+pandas==2.0.0
+numpy==1.23.5
+matplotlib==3.7.1
+kfp==1.8.20
+keras==2.12.0
+tensorflow==2.12.0
+scikit-learn==1.2.2
+seaborn==0.12.2
+netapp-dataops-k8s==2.4.0
+keras-visualizer==3.1.2
