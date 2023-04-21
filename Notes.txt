@@ -118,11 +118,11 @@ spec:
 
 Exercise 3
 1. In Kubeflow, create volumes:
-a. train - 5gi
-b. model - 5Gi
-c. eval - 5gi
-d. test - 5gi
-e. prod - 5gi
+a. train - 1gi
+b. model - 1Gi
+c. valid - 1gi
+d. test  - 1gi
+e. prod  - 1gi
 
 2. Create a project server - mounting all including model volume (wait about 2 minutes)
 3. note this is notebook CR - running as pod in kubeflow-user-example-com namespace
