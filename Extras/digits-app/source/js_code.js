@@ -1,7 +1,7 @@
 const canvas = document.getElementById('number-drawing');
 const ctx = canvas.getContext('2d');
-const apiUrl = process.env.API_URL;
-const apiHost = process.env.API_HOST;
+const apiHost = {{APIHOST}};
+const apiUrl = {{APIURL}};
 
 console.log('apiUrl: ' + apiUrl);
 console.log('apiHost: ' + apiHost);

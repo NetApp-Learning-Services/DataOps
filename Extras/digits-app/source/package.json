@@ -1,0 +1,10 @@
+{
+    "name": "digits-app",
+    "version": "v1alpha1",
+    "description": "Used for digits sample app",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {}
+}

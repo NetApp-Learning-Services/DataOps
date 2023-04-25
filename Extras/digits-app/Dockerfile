@@ -1,9 +1,17 @@
-FROM nginx:1.24.0-alpine
+FROM node:alpine3.17
 
-ARG API_URL = http://localhost:8080/v1/models/digits-recognizer:predict
-ARG API_HOST = digits-recognizer.kubeflow-user-example-com.example.com
+ARG API_URL=replaceurl
+ARG API_HOST=replacehost
 
-ENV API_URL = $API_URL
-ENV API_HOST = $API_HOST
+ENV API_URL=$API_URL
+ENV API_HOST=$API_HOST
 
-COPY ./source /usr/share/nginx/html
+WORKDIR /app
+COPY ./source/package*.json ./
+RUN npm install
+
+COPY ./source .
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
