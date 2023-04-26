@@ -66,7 +66,7 @@ Create a certificate for istio for the external ip
 Exercise 2 Task 2
 1. inside Exercise 3/Project enter:  python -m venv .env
 2. Set python interpreter in VSCodium  to be Project/.env/Scripts/python.exe
-3. when open a new terminal - path gets autoset to (.env) 
+3. when open a new terminal - path gets autoset to cd (.env) 
 4. copy ai-training-run.py into Project folder
    note: 
     dataset_volume_pvc_existing: str = "dataset-vol",
