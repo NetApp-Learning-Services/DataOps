@@ -1,0 +1,261 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: digits-recognizer-pipeline-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T17:37:50.320447',
+    pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
+      [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
+      {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
+      "name": "user_namespace", "optional": true}, {"default": "digits-train", "name":
+      "clone_step_train_pvc_existing", "optional": true}, {"default": "digits-valid",
+      "name": "clone_step_valid_pvc_existing", "optional": true}, {"default": "digits-train-clone",
+      "name": "clone_step_train_pvc", "optional": true}, {"default": "digits-valid-clone",
+      "name": "clone_step_valid_pvc", "optional": true}, {"default": "/mnt/train",
+      "name": "shape_step_train_mountpoint", "optional": true}, {"default": "/mnt/valid",
+      "name": "shape_step_valid_mountpoint", "optional": true}], "name": "digits-recognizer-pipeline"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20}
+spec:
+  entrypoint: digits-recognizer-pipeline
+  templates:
+  - name: clone-step
+    container:
+      args: [--user-namespace, '{{inputs.parameters.user_namespace}}', --clone-step-train-pvc-existing,
+        '{{inputs.parameters.clone_step_train_pvc_existing}}', --clone-step-valid-pvc-existing,
+        '{{inputs.parameters.clone_step_valid_pvc_existing}}', --clone-step-valid-pvc,
+        '{{inputs.parameters.clone_step_train_pvc}}', --clone-step-train-pvc, '{{inputs.parameters.clone_step_valid_pvc}}']
+      command:
+      - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'netapp-dataops-k8s==2.4.0' 'kfp==1.8.20' 'jsonschema==4.17.3' 'requests==2.25.1'
+        || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'netapp-dataops-k8s==2.4.0' 'kfp==1.8.20' 'jsonschema==4.17.3' 'requests==2.25.1'
+        --user) && "$0" "$@"
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - |
+        def clone_step(
+            user_namespace = "kubeflow-user-example-com",
+            clone_step_train_pvc_existing = "digits-train",
+            clone_step_valid_pvc_existing = "digits-valid",
+            clone_step_valid_pvc = "digits-valid-clone",
+            clone_step_train_pvc = "digits-train-clone"
+        ):
+            print("Data Clone Step")
+
+            """
+            Clone the existing volumes
+            Export clone pvc name
+            """
+
+            from netapp_dataops.k8s import clone_volume
+
+            clone_volume(source_pvc_name=clone_step_train_pvc_existing, new_pvc_name=clone_step_train_pvc, namespace=user_namespace)
+            clone_volume(source_pvc_name=clone_step_valid_pvc_existing, new_pvc_name=clone_step_valid_pvc, namespace=user_namespace)
+
+        import argparse
+        _parser = argparse.ArgumentParser(prog='Clone step', description='')
+        _parser.add_argument("--user-namespace", dest="user_namespace", type=str, required=False, default=argparse.SUPPRESS)
+        _parser.add_argument("--clone-step-train-pvc-existing", dest="clone_step_train_pvc_existing", type=str, required=False, default=argparse.SUPPRESS)
+        _parser.add_argument("--clone-step-valid-pvc-existing", dest="clone_step_valid_pvc_existing", type=str, required=False, default=argparse.SUPPRESS)
+        _parser.add_argument("--clone-step-valid-pvc", dest="clone_step_valid_pvc", type=str, required=False, default=argparse.SUPPRESS)
+        _parser.add_argument("--clone-step-train-pvc", dest="clone_step_train_pvc", type=str, required=False, default=argparse.SUPPRESS)
+        _parsed_args = vars(_parser.parse_args())
+
+        _outputs = clone_step(**_parsed_args)
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_train_pvc_existing}
+      - {name: clone_step_valid_pvc}
+      - {name: clone_step_valid_pvc_existing}
+      - {name: user_namespace}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "user_namespace"}, "then": ["--user-namespace",
+          {"inputValue": "user_namespace"}]}}, {"if": {"cond": {"isPresent": "clone_step_train_pvc_existing"},
+          "then": ["--clone-step-train-pvc-existing", {"inputValue": "clone_step_train_pvc_existing"}]}},
+          {"if": {"cond": {"isPresent": "clone_step_valid_pvc_existing"}, "then":
+          ["--clone-step-valid-pvc-existing", {"inputValue": "clone_step_valid_pvc_existing"}]}},
+          {"if": {"cond": {"isPresent": "clone_step_valid_pvc"}, "then": ["--clone-step-valid-pvc",
+          {"inputValue": "clone_step_valid_pvc"}]}}, {"if": {"cond": {"isPresent":
+          "clone_step_train_pvc"}, "then": ["--clone-step-train-pvc", {"inputValue":
+          "clone_step_train_pvc"}]}}], "command": ["sh", "-c", "(PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''netapp-dataops-k8s==2.4.0''
+          ''kfp==1.8.20'' ''jsonschema==4.17.3'' ''requests==2.25.1'' || PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''netapp-dataops-k8s==2.4.0''
+          ''kfp==1.8.20'' ''jsonschema==4.17.3'' ''requests==2.25.1'' --user) && \"$0\"
+          \"$@\"", "sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def clone_step(\n    user_namespace = \"kubeflow-user-example-com\",\n    clone_step_train_pvc_existing
+          = \"digits-train\",\n    clone_step_valid_pvc_existing = \"digits-valid\",\n    clone_step_valid_pvc
+          = \"digits-valid-clone\",\n    clone_step_train_pvc = \"digits-train-clone\"\n):\n    print(\"Data
+          Clone Step\")\n\n    \"\"\"\n    Clone the existing volumes\n    Export
+          clone pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\n    clone_volume(source_pvc_name=clone_step_train_pvc_existing,
+          new_pvc_name=clone_step_train_pvc, namespace=user_namespace)\n    clone_volume(source_pvc_name=clone_step_valid_pvc_existing,
+          new_pvc_name=clone_step_valid_pvc, namespace=user_namespace)\n\nimport argparse\n_parser
+          = argparse.ArgumentParser(prog=''Clone step'', description='''')\n_parser.add_argument(\"--user-namespace\",
+          dest=\"user_namespace\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc-existing\",
+          dest=\"clone_step_train_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc-existing\",
+          dest=\"clone_step_valid_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc\",
+          dest=\"clone_step_valid_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc\",
+          dest=\"clone_step_train_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = clone_step(**_parsed_args)\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "kubeflow-user-example-com", "name": "user_namespace", "optional": true,
+          "type": "String"}, {"default": "digits-train", "name": "clone_step_train_pvc_existing",
+          "optional": true, "type": "String"}, {"default": "digits-valid", "name":
+          "clone_step_valid_pvc_existing", "optional": true, "type": "String"}, {"default":
+          "digits-valid-clone", "name": "clone_step_valid_pvc", "optional": true,
+          "type": "String"}, {"default": "digits-train-clone", "name": "clone_step_train_pvc",
+          "optional": true, "type": "String"}], "name": "Clone step"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"clone_step_train_pvc": "{{inputs.parameters.clone_step_valid_pvc}}",
+          "clone_step_train_pvc_existing": "{{inputs.parameters.clone_step_train_pvc_existing}}",
+          "clone_step_valid_pvc": "{{inputs.parameters.clone_step_train_pvc}}", "clone_step_valid_pvc_existing":
+          "{{inputs.parameters.clone_step_valid_pvc_existing}}", "user_namespace":
+          "{{inputs.parameters.user_namespace}}"}'}
+  - name: digits-recognizer-pipeline
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_train_pvc_existing}
+      - {name: clone_step_valid_pvc}
+      - {name: clone_step_valid_pvc_existing}
+      - {name: shape_step_train_mountpoint}
+      - {name: shape_step_valid_mountpoint}
+      - {name: user_namespace}
+    dag:
+      tasks:
+      - name: clone-step
+        template: clone-step
+        arguments:
+          parameters:
+          - {name: clone_step_train_pvc, value: '{{inputs.parameters.clone_step_train_pvc}}'}
+          - {name: clone_step_train_pvc_existing, value: '{{inputs.parameters.clone_step_train_pvc_existing}}'}
+          - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
+          - {name: clone_step_valid_pvc_existing, value: '{{inputs.parameters.clone_step_valid_pvc_existing}}'}
+          - {name: user_namespace, value: '{{inputs.parameters.user_namespace}}'}
+      - name: shape-step
+        template: shape-step
+        dependencies: [clone-step]
+        arguments:
+          parameters:
+          - {name: clone_step_train_pvc, value: '{{inputs.parameters.clone_step_train_pvc}}'}
+          - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
+          - {name: shape_step_train_mountpoint, value: '{{inputs.parameters.shape_step_train_mountpoint}}'}
+          - {name: shape_step_valid_mountpoint, value: '{{inputs.parameters.shape_step_valid_mountpoint}}'}
+  - name: shape-step
+    container:
+      args: [--shape-step-train-mountpoint, '{{inputs.parameters.shape_step_train_mountpoint}}',
+        --shape-step-valid-mountpoint, '{{inputs.parameters.shape_step_valid_mountpoint}}']
+      command:
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def shape_step(\n    shape_step_train_mountpoint = \"/mnt/train\",\n    shape_step_valid_mountpoint\
+        \ = \"/mnt/valid\"\n) :\n\n    import os\n    import numpy as np\n\n    DATA_TRAIN_FILE\
+        \ = os.path.join(shape_step_train_mountpoint,'train.csv')\n    TRAIN_DF =\
+        \ pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop('label', axis=1)\n\
+        \    TRAIN_Y = TRAIN_DF.label\n    # Reshape image in 3 dimensions (height\
+        \ = 28px, width = 28px , channel = 1)... This is needed for the Keras API\n\
+        \    TRAIN_X = TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n\
+        \    # Each pixel has a value between 0-255. Here we divide by 255, to get\
+        \ values from 0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE = os.path.join(shape_step_train_mountpoint,\
+        \ \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE, TRAIN_X)\n    DATA_TRAIN_Y_FILE\
+        \ = os.path.join(shape_step_train_mountpoint, \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE,\
+        \ TRAIN_Y)\n\n    DATA_VALID_FILE = os.path.join(shape_step_valid_mountpoint,'valid.csv')\n\
+        \    VALID_DF = pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop('label',\
+        \ axis=1)\n    VALID_Y = VALID_DF.label\n    # Reshape image in 3 dimensions\
+        \ (height = 28px, width = 28px , channel = 1)... This is needed for the Keras\
+        \ API\n    VALID_X = VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the\
+        \ data\n    # Each pixel has a value between 0-255. Here we divide by 255,\
+        \ to get values from 0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE\
+        \ = os.path.join(shape_step_valid_mountpoint, \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE,\
+        \ VALID_X)\n    DATA_VALID_Y_FILE = os.path.join(shape_step_valid_mountpoint,\
+        \ \"valid_y.npy\")\n    np.save(DATA_VALID_Y_FILE, VALID_Y)\n\nimport argparse\n\
+        _parser = argparse.ArgumentParser(prog='Shape step', description='')\n_parser.add_argument(\"\
+        --shape-step-train-mountpoint\", dest=\"shape_step_train_mountpoint\", type=str,\
+        \ required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--shape-step-valid-mountpoint\"\
+        , dest=\"shape_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parsed_args = vars(_parser.parse_args())\n\n_outputs = shape_step(**_parsed_args)\n"
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.shape_step_train_mountpoint}}', name: train}
+      - {mountPath: '{{inputs.parameters.shape_step_valid_mountpoint}}', name: valid}
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_valid_pvc}
+      - {name: shape_step_train_mountpoint}
+      - {name: shape_step_valid_mountpoint}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "shape_step_train_mountpoint"},
+          "then": ["--shape-step-train-mountpoint", {"inputValue": "shape_step_train_mountpoint"}]}},
+          {"if": {"cond": {"isPresent": "shape_step_valid_mountpoint"}, "then": ["--shape-step-valid-mountpoint",
+          {"inputValue": "shape_step_valid_mountpoint"}]}}], "command": ["sh", "-ec",
+          "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def shape_step(\n    shape_step_train_mountpoint
+          = \"/mnt/train\",\n    shape_step_valid_mountpoint = \"/mnt/valid\"\n) :\n\n    import
+          os\n    import numpy as np\n\n    DATA_TRAIN_FILE = os.path.join(shape_step_train_mountpoint,''train.csv'')\n    TRAIN_DF
+          = pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop(''label'', axis=1)\n    TRAIN_Y
+          = TRAIN_DF.label\n    # Reshape image in 3 dimensions (height = 28px, width
+          = 28px , channel = 1)... This is needed for the Keras API\n    TRAIN_X =
+          TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n    # Each
+          pixel has a value between 0-255. Here we divide by 255, to get values from
+          0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE = os.path.join(shape_step_train_mountpoint,
+          \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE, TRAIN_X)\n    DATA_TRAIN_Y_FILE
+          = os.path.join(shape_step_train_mountpoint, \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE,
+          TRAIN_Y)\n\n    DATA_VALID_FILE = os.path.join(shape_step_valid_mountpoint,''valid.csv'')\n    VALID_DF
+          = pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop(''label'', axis=1)\n    VALID_Y
+          = VALID_DF.label\n    # Reshape image in 3 dimensions (height = 28px, width
+          = 28px , channel = 1)... This is needed for the Keras API\n    VALID_X =
+          VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n    # Each
+          pixel has a value between 0-255. Here we divide by 255, to get values from
+          0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE = os.path.join(shape_step_valid_mountpoint,
+          \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE, VALID_X)\n    DATA_VALID_Y_FILE
+          = os.path.join(shape_step_valid_mountpoint, \"valid_y.npy\")\n    np.save(DATA_VALID_Y_FILE,
+          VALID_Y)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog=''Shape
+          step'', description='''')\n_parser.add_argument(\"--shape-step-train-mountpoint\",
+          dest=\"shape_step_train_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--shape-step-valid-mountpoint\",
+          dest=\"shape_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = shape_step(**_parsed_args)\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "/mnt/train", "name": "shape_step_train_mountpoint", "optional": true, "type":
+          "String"}, {"default": "/mnt/valid", "name": "shape_step_valid_mountpoint",
+          "optional": true, "type": "String"}], "name": "Shape step"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"shape_step_train_mountpoint":
+          "{{inputs.parameters.shape_step_train_mountpoint}}", "shape_step_valid_mountpoint":
+          "{{inputs.parameters.shape_step_valid_mountpoint}}"}'}
+    volumes:
+    - name: train
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_train_pvc}}'}
+    - name: valid
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_valid_pvc}}'}
+  arguments:
+    parameters:
+    - {name: no_epochs, value: '1'}
+    - {name: optimizer, value: adam}
+    - {name: user_namespace, value: kubeflow-user-example-com}
+    - {name: clone_step_train_pvc_existing, value: digits-train}
+    - {name: clone_step_valid_pvc_existing, value: digits-valid}
+    - {name: clone_step_train_pvc, value: digits-train-clone}
+    - {name: clone_step_valid_pvc, value: digits-valid-clone}
+    - {name: shape_step_train_mountpoint, value: /mnt/train}
+    - {name: shape_step_valid_mountpoint, value: /mnt/valid}
+  serviceAccountName: pipeline-runner

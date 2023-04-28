@@ -6,7 +6,8 @@ import kfp.components as components
 from typing import NamedTuple
 
 # Define pipeline variables and set default values
-
+clone_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
+shape_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
 
 
 # train_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
@@ -77,10 +78,10 @@ def shape_step(
     np.save(DATA_VALID_Y_FILE, VALID_Y)
 
 
-comp_clone = components.create_component_from_func(clone_step, base_image="curtisab/ndot-jupyter-scipy:v1alpha1",
+comp_clone = components.create_component_from_func(clone_step, base_image=clone_step_container_image,
                                                             packages_to_install=['netapp-dataops-k8s==2.4.0', 'kfp==1.8.20', 'jsonschema==4.17.3', 'requests==2.25.1'])
 
-comp_shape = components.func_to_container_op(shape_step, base_image="curtisab/ndot-jupyter-scipy:v1alpha1")
+comp_shape = components.func_to_container_op(shape_step, base_image=shape_step_container_image)
 
 @dsl.pipeline(
     name='digits-recognizer-pipeline',
@@ -93,10 +94,8 @@ def create_pipe(
     user_namespace = "kubeflow-user-example-com",
     clone_step_train_pvc_existing = "digits-train",
     clone_step_valid_pvc_existing = "digits-valid",
-    clone_step_container_image = "curtisab/ndot-jupyter-scipy:v1alpha1",
     clone_step_train_pvc = "digits-train-clone",
     clone_step_valid_pvc= "digits-valid-clone",
-    shape_step_container_image = "curtisab/ndot-jupyter-scipy:v1alpha1",
     shape_step_train_mountpoint = "/mnt/train",
     shape_step_valid_mountpoint = "/mnt/valid",
 ):
@@ -133,8 +132,6 @@ if __name__ == "__main__":
         "clone_step_valid_pvc_existing": "digits-valid",
         "clone_step_train_pvc": "digits-train-clone",
         "clone_step_valid_pvc": "digits-valid-clone",
-        "clone_step_container_image": "curtisab/ndot-jupyter-scipy:v1alpha1",
-        "shape_step_container_image": "curtisab/ndot-jupyter-scipy:v1alpha1",
         "shape_step_train_mountpoint":  "/mnt/train",
         "shape_step_valid_mountpoint": "/mnt/valid",
     }
