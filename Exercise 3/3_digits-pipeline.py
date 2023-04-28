@@ -85,8 +85,11 @@ def shape_step(
     np.save(DATA_VALID_Y_FILE, VALID_Y)
 
 def train_step(    
-    no_epochs:int = 1,
-    optimizer: str = "adam"
+    no_epochs:int = 1,   
+    optimizer: str = "adam",
+    train_step_train_mountpoint: str = "/mnt/train",
+    train_step_valid_mountpoint: str = "/mnt/valid",
+    train_step_model_mountpoint: str = "/mnt/model"
 ) -> NamedTuple('Output', [('mlpipeline_ui_metadata', 'UI_metadata'),('mlpipeline_metrics', 'Metrics')]):
 
     print("Model Generation Step")
@@ -95,6 +98,7 @@ def train_step(
     Build the model with Keras API
     Export model parameters
     """
+    import os
     from tensorflow import keras
     import tensorflow as tf
     import numpy as np
@@ -125,12 +129,11 @@ def train_step(
               metrics=['accuracy'])
 
     # Get the data
+    DATA_TRAIN_X_FILE = os.path.join(train_step_train_mountpoint, "train_x.npy")
+    x_train = np.load(DATA_TRAIN_X_FILE)
     
-    minio_client.fget_object(minio_bucket,"x_train","/tmp/x_train.npy")
-    x_train = np.load("/tmp/x_train.npy")
-    
-    minio_client.fget_object(minio_bucket,"y_train","/tmp/y_train.npy")
-    y_train = np.load("/tmp/y_train.npy")
+    DATA_TRAIN_Y_FILE = os.path.join(train_step_train_mountpoint, "train_y.npy")
+    y_train = np.load(DATA_TRAIN_Y_FILE)
     
     # Fit the model and return the history while training
     history = model.fit(
@@ -140,11 +143,11 @@ def train_step(
       batch_size=20,
     )
     
-    minio_client.fget_object(minio_bucket,"x_test","/tmp/x_test.npy")
-    x_test = np.load("/tmp/x_test.npy")
-    
-    minio_client.fget_object(minio_bucket,"y_test","/tmp/y_test.npy")
-    y_test = np.load("/tmp/y_test.npy")
+    DATA_VALID_X_FILE = os.path.join(train_step_valid_mountpoint, "valid_x.npy")
+    x_test = np.load(DATA_VALID_X_FILE)
+
+    DATA_VALID_Y_FILE = os.path.join(train_step_valid_mountpoint, "valid_y.npy")
+    y_test = np.load(DATA_VALID_Y_FILE)
     
 
     # Test the model against the test dataset
@@ -218,42 +221,24 @@ def train_step(
           'format' : "PERCENTAGE"
         }]}
     
-    ### Save model to minIO
+    ### Save model to the storage
+    import datetime
+    now = datetime.datetime.now()
+    DATA_MODEL_VERSION = now.strftime("%Y-%m-%d-%H-%M-%S")
+    DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)
+    os.makedirs(DATA_MODEL_PATH, exist_ok=True)
+    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)
+
+    ### Save model to the version 1 folder
+    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint, "1")
+    import shutil
+    # Delete the old version
+    shutil.rmtree(DATA_MODEL_V1_PATH) 
+    # Recreate the version 1 folder
+    os.makedirs(DATA_MODEL_V1_PATH, exist_ok=False)
+    keras.models.save_model(model,DATA_MODEL_V1_PATH)
     
-    keras.models.save_model(model,"/tmp/detect-digits")
-    
-    from minio import Minio
-    import os
-
-    minio_client = Minio(
-            "100.65.11.110:9000",
-            access_key="minio",
-            secret_key="minio123",
-            secure=False
-        )
-    minio_bucket = "mlpipeline"
-
-
-    import glob
-
-    def upload_local_directory_to_minio(local_path, bucket_name, minio_path):
-        assert os.path.isdir(local_path)
-
-        for local_file in glob.glob(local_path + '/**'):
-            local_file = local_file.replace(os.sep, "/") # Replace \ with / on Windows
-            if not os.path.isfile(local_file):
-                upload_local_directory_to_minio(
-                    local_file, bucket_name, minio_path + "/" + os.path.basename(local_file))
-            else:
-                remote_path = os.path.join(
-                    minio_path, local_file[1 + len(local_path):])
-                remote_path = remote_path.replace(
-                    os.sep, "/")  # Replace \ with / on Windows
-                minio_client.fput_object(bucket_name, remote_path, local_file)
-
-    upload_local_directory_to_minio("/tmp/detect-digits",minio_bucket,"models/detect-digits/1/") # 1 for version 1
-    
-    print("Saved model to minIO")
+    print("Saved model to the model volume twice")
     
     from collections import namedtuple
     output = namedtuple('output', ['mlpipeline_ui_metadata', 'mlpipeline_metrics'])
@@ -268,7 +253,7 @@ comp_clone = components.create_component_from_func(
 comp_shape = components.func_to_container_op(
     shape_step, 
     base_image=shape_step_container_image)
-    
+
 comp_train= components.create_component_from_func(
     train_step, 
     base_image=train_step_container_image, 
@@ -289,6 +274,10 @@ def create_pipe(
     clone_step_valid_pvc= "digits-valid-clone",
     shape_step_train_mountpoint = "/mnt/train",
     shape_step_valid_mountpoint = "/mnt/valid",
+    train_step_train_mountpoint = "/mnt/train",
+    train_step_valid_mountpoint = "/mnt/valid",
+    train_step_model_mountpoint = "/mnt/model",
+    train_step_model_pvc_existing = "digits-model",
 ):
 
 
@@ -309,7 +298,21 @@ def create_pipe(
     )
     step2.after(step1)
 
-    step3 = comp_train(no_epochs,optimizer)
+    step3 = comp_train(
+        no_epochs, 
+        optimizer, 
+        train_step_train_mountpoint, 
+        train_step_valid_mountpoint, 
+        train_step_model_mountpoint)
+    step3.apply(
+        onprem.mount_pvc(clone_step_train_pvc, 'train', train_step_train_mountpoint)
+    )
+    step3.apply(
+        onprem.mount_pvc(clone_step_valid_pvc, 'valid', train_step_valid_mountpoint)
+    )
+    step3.apply(
+        onprem.mount_pvc(train_step_model_pvc_existing, 'model', train_step_model_mountpoint)
+    )
     step3.after(step2)
     # step4 = comp_serve()
     # step4.after(step3)
@@ -328,6 +331,9 @@ if __name__ == "__main__":
         "clone_step_valid_pvc": "digits-valid-clone",
         "shape_step_train_mountpoint":  "/mnt/train",
         "shape_step_valid_mountpoint": "/mnt/valid",
+        "train_step_train_pvc_existing": "digits-model",
+        "train_step_train_mountpoint":  "/mnt/train",
+        "train_step_valid_mountpoint": "/mnt/valid",
     }
 
     now = datetime.datetime.now()
