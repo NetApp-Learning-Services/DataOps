@@ -230,7 +230,7 @@ def train_step(
     now = datetime.datetime.now()
     DATA_MODEL_VERSION = now.strftime("%Y-%m-%d-%H-%M-%S")
     DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)
-    os.makedirs(DATA_MODEL_PATH, exist_ok=True)
+    os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)
     keras.models.save_model(model,DATA_MODEL_VERSION_PATH)
 
     ### Save model to the version 1 folder

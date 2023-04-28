@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T21:02:22.197292',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T21:17:54.738056',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -222,7 +222,7 @@ spec:
       labels:
         pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
-        pipelines.kubeflow.org/enable_caching: "false"
+        pipelines.kubeflow.org/enable_caching: "true"
       annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
           {"args": [{"if": {"cond": {"isPresent": "shape_step_train_mountpoint"},
           "then": ["--shape-step-train-mountpoint", {"inputValue": "shape_step_train_mountpoint"}]}},
@@ -346,7 +346,7 @@ spec:
         \  float(model_loss),\n          'format' : \"PERCENTAGE\"\n        }]}\n\n\
         \    ### Save model to the storage\n    import datetime\n    now = datetime.datetime.now()\n\
         \    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH\
-        \ = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_PATH,\
+        \ = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,\
         \ exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\
         \n    ### Save model to the version 1 folder\n    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint,\
         \ \"1\")\n    import shutil\n    # Delete the old version\n    shutil.rmtree(DATA_MODEL_V1_PATH)\
@@ -393,7 +393,7 @@ spec:
       labels:
         pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
         pipelines.kubeflow.org/pipeline-sdk-type: kfp
-        pipelines.kubeflow.org/enable_caching: "false"
+        pipelines.kubeflow.org/enable_caching: "true"
       annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
           {"args": [{"if": {"cond": {"isPresent": "no_epochs"}, "then": ["--no-epochs",
           {"inputValue": "no_epochs"}]}}, {"if": {"cond": {"isPresent": "optimizer"},
@@ -460,7 +460,7 @@ spec:
           : \"PERCENTAGE\"\n        },{\n          ''name'': ''model_loss'',\n          ''numberValue'':  float(model_loss),\n          ''format''
           : \"PERCENTAGE\"\n        }]}\n\n    ### Save model to the storage\n    import
           datetime\n    now = datetime.datetime.now()\n    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH
-          = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_PATH,
+          = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,
           exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ###
           Save model to the version 1 folder\n    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint,
           \"1\")\n    import shutil\n    # Delete the old version\n    shutil.rmtree(DATA_MODEL_V1_PATH)
