@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T17:37:50.320447',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T17:47:43.046933',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -164,24 +164,25 @@ spec:
         printf "%s" "$0" > "$program_path"
         python3 -u "$program_path" "$@"
       - "def shape_step(\n    shape_step_train_mountpoint = \"/mnt/train\",\n    shape_step_valid_mountpoint\
-        \ = \"/mnt/valid\"\n) :\n\n    import os\n    import numpy as np\n\n    DATA_TRAIN_FILE\
-        \ = os.path.join(shape_step_train_mountpoint,'train.csv')\n    TRAIN_DF =\
-        \ pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop('label', axis=1)\n\
-        \    TRAIN_Y = TRAIN_DF.label\n    # Reshape image in 3 dimensions (height\
-        \ = 28px, width = 28px , channel = 1)... This is needed for the Keras API\n\
-        \    TRAIN_X = TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n\
-        \    # Each pixel has a value between 0-255. Here we divide by 255, to get\
-        \ values from 0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE = os.path.join(shape_step_train_mountpoint,\
-        \ \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE, TRAIN_X)\n    DATA_TRAIN_Y_FILE\
-        \ = os.path.join(shape_step_train_mountpoint, \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE,\
-        \ TRAIN_Y)\n\n    DATA_VALID_FILE = os.path.join(shape_step_valid_mountpoint,'valid.csv')\n\
-        \    VALID_DF = pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop('label',\
-        \ axis=1)\n    VALID_Y = VALID_DF.label\n    # Reshape image in 3 dimensions\
+        \ = \"/mnt/valid\"\n) :\n\n    import os\n    import numpy as np\n    import\
+        \ pandas as pd\n\n    DATA_TRAIN_FILE = os.path.join(shape_step_train_mountpoint,'train.csv')\n\
+        \    TRAIN_DF = pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop('label',\
+        \ axis=1)\n    TRAIN_Y = TRAIN_DF.label\n    # Reshape image in 3 dimensions\
         \ (height = 28px, width = 28px , channel = 1)... This is needed for the Keras\
-        \ API\n    VALID_X = VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the\
+        \ API\n    TRAIN_X = TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the\
         \ data\n    # Each pixel has a value between 0-255. Here we divide by 255,\
-        \ to get values from 0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE\
-        \ = os.path.join(shape_step_valid_mountpoint, \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE,\
+        \ to get values from 0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE\
+        \ = os.path.join(shape_step_train_mountpoint, \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE,\
+        \ TRAIN_X)\n    DATA_TRAIN_Y_FILE = os.path.join(shape_step_train_mountpoint,\
+        \ \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE, TRAIN_Y)\n\n    DATA_VALID_FILE\
+        \ = os.path.join(shape_step_valid_mountpoint,'valid.csv')\n    VALID_DF =\
+        \ pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop('label', axis=1)\n\
+        \    VALID_Y = VALID_DF.label\n    # Reshape image in 3 dimensions (height\
+        \ = 28px, width = 28px , channel = 1)... This is needed for the Keras API\n\
+        \    VALID_X = VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n\
+        \    # Each pixel has a value between 0-255. Here we divide by 255, to get\
+        \ values from 0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE =\
+        \ os.path.join(shape_step_valid_mountpoint, \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE,\
         \ VALID_X)\n    DATA_VALID_Y_FILE = os.path.join(shape_step_valid_mountpoint,\
         \ \"valid_y.npy\")\n    np.save(DATA_VALID_Y_FILE, VALID_Y)\n\nimport argparse\n\
         _parser = argparse.ArgumentParser(prog='Shape step', description='')\n_parser.add_argument(\"\
@@ -212,7 +213,8 @@ spec:
           "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
           -u \"$program_path\" \"$@\"\n", "def shape_step(\n    shape_step_train_mountpoint
           = \"/mnt/train\",\n    shape_step_valid_mountpoint = \"/mnt/valid\"\n) :\n\n    import
-          os\n    import numpy as np\n\n    DATA_TRAIN_FILE = os.path.join(shape_step_train_mountpoint,''train.csv'')\n    TRAIN_DF
+          os\n    import numpy as np\n    import pandas as pd\n\n    DATA_TRAIN_FILE
+          = os.path.join(shape_step_train_mountpoint,''train.csv'')\n    TRAIN_DF
           = pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop(''label'', axis=1)\n    TRAIN_Y
           = TRAIN_DF.label\n    # Reshape image in 3 dimensions (height = 28px, width
           = 28px , channel = 1)... This is needed for the Keras API\n    TRAIN_X =

@@ -48,6 +48,7 @@ def shape_step(
 
     import os
     import numpy as np
+    import pandas as pd
 
     DATA_TRAIN_FILE = os.path.join(shape_step_train_mountpoint,'train.csv')
     TRAIN_DF = pd.read_csv(DATA_TRAIN_FILE)
