@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import kfp
 import kfp.dsl as dsl
 import kfp.onprem as onprem
@@ -226,8 +226,8 @@ def train_step(
         }]}
     
     ### Save model to the storage
-    import datetime
-    now = datetime.datetime.now()
+    from datetime import datetime
+    now = datetime.now()
     DATA_MODEL_VERSION = now.strftime("%Y-%m-%d-%H-%M-%S")
     DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)
     os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)
@@ -248,6 +248,48 @@ def train_step(
     from collections import namedtuple
     output = namedtuple('output', ['mlpipeline_ui_metadata', 'mlpipeline_metrics'])
     return output(json.dumps(metadata),json.dumps(metrics))
+
+def serve_step(
+    train_step_model_pvc_existing: str = "digits-model"
+):
+    """
+    Create kserve instance
+    """
+    from kubernetes import client 
+    from kserve import KServeClient
+    from kserve import constants
+    from kserve import utils
+    from kserve import V1beta1InferenceService
+    from kserve import V1beta1InferenceServiceSpec
+    from kserve import V1beta1PredictorSpec
+    from kserve import V1beta1TFServingSpec
+    from datetime import datetime
+
+    print("Model Serve Step")
+
+    namespace = utils.get_default_target_namespace()
+
+    now = datetime.now()
+    v = now.strftime("%Y-%m-%d--%H-%M-%S")
+
+    name='digits-recognizer-{}'.format(v)
+    kserve_version='v1beta1'
+    api_version = constants.KSERVE_GROUP + '/' + kserve_version
+    pvc_path = "pvc://" + train_step_model_pvc_existing + '/1/'
+    print("Path to pvc: " + pvc_path)
+
+    isvc = V1beta1InferenceService(api_version=api_version,
+                                   kind=constants.KSERVE_KIND,
+                                   metadata=client.V1ObjectMeta(
+                                       name=name, namespace=namespace, annotations={'sidecar.istio.io/inject':'false'}),
+                                   spec=V1beta1InferenceServiceSpec(
+                                   predictor=V1beta1PredictorSpec(
+                                       tensorflow=(V1beta1TFServingSpec(
+                                           storage_uri=pvc_path))))
+    )
+
+    KServe = KServeClient()
+    KServe.create(isvc)
     
 
 comp_clone = components.create_component_from_func(
@@ -263,6 +305,11 @@ comp_train= components.create_component_from_func(
     train_step, 
     base_image=train_step_container_image, 
     packages_to_install=['tensorflow==2.12.0'])
+
+comp_serve = components.create_component_from_func(
+    serve_step,
+    base_image="public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0",
+    packages_to_install=['kserve==0.10.1'])
 
 @dsl.pipeline(
     name='digits-recognizer-pipeline',
@@ -283,6 +330,7 @@ def create_pipe(
     train_step_valid_mountpoint = "/mnt/valid",
     train_step_model_mountpoint = "/mnt/model",
     train_step_model_pvc_existing = "digits-model",
+    serve_step_model_pvc_existing = "digits-model",
 ):
 
 
@@ -319,8 +367,8 @@ def create_pipe(
         onprem.mount_pvc(train_step_model_pvc_existing, 'model', train_step_model_mountpoint)
     )
     step3.after(step2)
-    # step4 = comp_serve()
-    # step4.after(step3)
+    step4 = comp_serve(serve_step_model_pvc_existing)
+    step4.after(step3)
 
 
 if __name__ == "__main__":
@@ -339,9 +387,10 @@ if __name__ == "__main__":
         "train_step_train_pvc_existing": "digits-model",
         "train_step_train_mountpoint":  "/mnt/train",
         "train_step_valid_mountpoint": "/mnt/valid",
+        "serve_step_train_pvc_existing": "digits-model",
     }
 
-    now = datetime.datetime.now()
+    now = datetime.now()
     pipe_version = now.strftime("%Y-%m-%d-%H-%M-%S")
     pipe_name = "digits-pipe-" + pipe_version
     pipe_file = pipe_name + ".yaml"

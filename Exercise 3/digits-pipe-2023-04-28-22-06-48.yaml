@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T21:25:39.229251',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T22:06:48.700936',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -16,7 +16,8 @@ metadata:
       "name": "train_step_train_mountpoint", "optional": true}, {"default": "/mnt/valid",
       "name": "train_step_valid_mountpoint", "optional": true}, {"default": "/mnt/model",
       "name": "train_step_model_mountpoint", "optional": true}, {"default": "digits-model",
-      "name": "train_step_model_pvc_existing", "optional": true}], "name": "digits-recognizer-pipeline"}'}
+      "name": "train_step_model_pvc_existing", "optional": true}, {"default": "digits-model",
+      "name": "serve_step_model_pvc_existing", "optional": true}], "name": "digits-recognizer-pipeline"}'}
   labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20}
 spec:
   entrypoint: digits-recognizer-pipeline
@@ -128,6 +129,7 @@ spec:
       - {name: clone_step_valid_pvc_existing}
       - {name: no_epochs}
       - {name: optimizer}
+      - {name: serve_step_model_pvc_existing}
       - {name: shape_step_train_mountpoint}
       - {name: shape_step_valid_mountpoint}
       - {name: train_step_model_mountpoint}
@@ -146,6 +148,12 @@ spec:
           - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
           - {name: clone_step_valid_pvc_existing, value: '{{inputs.parameters.clone_step_valid_pvc_existing}}'}
           - {name: user_namespace, value: '{{inputs.parameters.user_namespace}}'}
+      - name: serve-step
+        template: serve-step
+        dependencies: [train-step]
+        arguments:
+          parameters:
+          - {name: serve_step_model_pvc_existing, value: '{{inputs.parameters.serve_step_model_pvc_existing}}'}
       - name: shape-step
         template: shape-step
         dependencies: [clone-step]
@@ -168,6 +176,84 @@ spec:
           - {name: train_step_model_pvc_existing, value: '{{inputs.parameters.train_step_model_pvc_existing}}'}
           - {name: train_step_train_mountpoint, value: '{{inputs.parameters.train_step_train_mountpoint}}'}
           - {name: train_step_valid_mountpoint, value: '{{inputs.parameters.train_step_valid_mountpoint}}'}
+  - name: serve-step
+    container:
+      args: [--train-step-model-pvc-existing, '{{inputs.parameters.serve_step_model_pvc_existing}}']
+      command:
+      - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'kserve==0.10.1' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install
+        --quiet --no-warn-script-location 'kserve==0.10.1' --user) && "$0" "$@"
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def serve_step(\n    train_step_model_pvc_existing = \"digits-model\"\n):\n\
+        \    \"\"\"\n    Create kserve instance\n    \"\"\"\n    from kubernetes import\
+        \ client \n    from kserve import KServeClient\n    from kserve import constants\n\
+        \    from kserve import utils\n    from kserve import V1beta1InferenceService\n\
+        \    from kserve import V1beta1InferenceServiceSpec\n    from kserve import\
+        \ V1beta1PredictorSpec\n    from kserve import V1beta1TFServingSpec\n    from\
+        \ datetime import datetime\n\n    print(\"Model Serve Step\")\n\n    namespace\
+        \ = utils.get_default_target_namespace()\n\n    now = datetime.now()\n   \
+        \ v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n    name='digits-recognizer-{}'.format(v)\n\
+        \    kserve_version='v1beta1'\n    api_version = constants.KSERVE_GROUP +\
+        \ '/' + kserve_version\n    pvc_path = \"pvc://\" + train_step_model_pvc_existing\
+        \ + '/1/'\n    print(\"Path to pvc: \" + pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n\
+        \                                   kind=constants.KSERVE_KIND,\n        \
+        \                           metadata=client.V1ObjectMeta(\n              \
+        \                         name=name, namespace=namespace, annotations={'sidecar.istio.io/inject':'false'}),\n\
+        \                                   spec=V1beta1InferenceServiceSpec(\n  \
+        \                                 predictor=V1beta1PredictorSpec(\n      \
+        \                                 tensorflow=(V1beta1TFServingSpec(\n    \
+        \                                       storage_uri=pvc_path))))\n    )\n\n\
+        \    KServe = KServeClient()\n    KServe.create(isvc)\n\nimport argparse\n\
+        _parser = argparse.ArgumentParser(prog='Serve step', description='Create kserve\
+        \ instance')\n_parser.add_argument(\"--train-step-model-pvc-existing\", dest=\"\
+        train_step_model_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parsed_args = vars(_parser.parse_args())\n\n_outputs = serve_step(**_parsed_args)\n"
+      image: public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0
+    inputs:
+      parameters:
+      - {name: serve_step_model_pvc_existing}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Create
+          kserve instance", "implementation": {"container": {"args": [{"if": {"cond":
+          {"isPresent": "train_step_model_pvc_existing"}, "then": ["--train-step-model-pvc-existing",
+          {"inputValue": "train_step_model_pvc_existing"}]}}], "command": ["sh", "-c",
+          "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+          ''kserve==0.10.1'' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install
+          --quiet --no-warn-script-location ''kserve==0.10.1'' --user) && \"$0\" \"$@\"",
+          "sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def serve_step(\n    train_step_model_pvc_existing
+          = \"digits-model\"\n):\n    \"\"\"\n    Create kserve instance\n    \"\"\"\n    from
+          kubernetes import client \n    from kserve import KServeClient\n    from
+          kserve import constants\n    from kserve import utils\n    from kserve import
+          V1beta1InferenceService\n    from kserve import V1beta1InferenceServiceSpec\n    from
+          kserve import V1beta1PredictorSpec\n    from kserve import V1beta1TFServingSpec\n    from
+          datetime import datetime\n\n    print(\"Model Serve Step\")\n\n    namespace
+          = utils.get_default_target_namespace()\n\n    now = datetime.now()\n    v
+          = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n    name=''digits-recognizer-{}''.format(v)\n    kserve_version=''v1beta1''\n    api_version
+          = constants.KSERVE_GROUP + ''/'' + kserve_version\n    pvc_path = \"pvc://\"
+          + train_step_model_pvc_existing + ''/1/''\n    print(\"Path to pvc: \" +
+          pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n                                   kind=constants.KSERVE_KIND,\n                                   metadata=client.V1ObjectMeta(\n                                       name=name,
+          namespace=namespace, annotations={''sidecar.istio.io/inject'':''false''}),\n                                   spec=V1beta1InferenceServiceSpec(\n                                   predictor=V1beta1PredictorSpec(\n                                       tensorflow=(V1beta1TFServingSpec(\n                                           storage_uri=pvc_path))))\n    )\n\n    KServe
+          = KServeClient()\n    KServe.create(isvc)\n\nimport argparse\n_parser =
+          argparse.ArgumentParser(prog=''Serve step'', description=''Create kserve
+          instance'')\n_parser.add_argument(\"--train-step-model-pvc-existing\", dest=\"train_step_model_pvc_existing\",
+          type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args = vars(_parser.parse_args())\n\n_outputs
+          = serve_step(**_parsed_args)\n"], "image": "public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0"}},
+          "inputs": [{"default": "digits-model", "name": "train_step_model_pvc_existing",
+          "optional": true, "type": "String"}], "name": "Serve step"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"train_step_model_pvc_existing":
+          "{{inputs.parameters.serve_step_model_pvc_existing}}"}'}
   - name: shape-step
     container:
       args: [--shape-step-train-mountpoint, '{{inputs.parameters.shape_step_train_mountpoint}}',
@@ -344,11 +430,12 @@ spec:
         \          'numberValue':  float(model_accuracy),\n          'format' : \"\
         PERCENTAGE\"\n        },{\n          'name': 'model_loss',\n          'numberValue':\
         \  float(model_loss),\n          'format' : \"PERCENTAGE\"\n        }]}\n\n\
-        \    ### Save model to the storage\n    import datetime\n    now = datetime.datetime.now()\n\
-        \    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH\
-        \ = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,\
-        \ exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\
-        \n    ### Save model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH\
+        \    ### Save model to the storage\n    from datetime import datetime\n  \
+        \  now = datetime.now()\n    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\"\
+        )\n    DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint,\
+        \ DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)\n\
+        \    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ### Save\
+        \ model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH\
         \ = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)\
         \ and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n\
         \        shutil.rmtree(DATA_MODEL_V1_PATH) \n    # Recreate the version 1\
@@ -459,10 +546,10 @@ spec:
           ''markdown'',\n            }\n        ]\n    }\n\n    metrics = {\n      ''metrics'':
           [{\n          ''name'': ''model_accuracy'',\n          ''numberValue'':  float(model_accuracy),\n          ''format''
           : \"PERCENTAGE\"\n        },{\n          ''name'': ''model_loss'',\n          ''numberValue'':  float(model_loss),\n          ''format''
-          : \"PERCENTAGE\"\n        }]}\n\n    ### Save model to the storage\n    import
-          datetime\n    now = datetime.datetime.now()\n    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH
-          = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,
-          exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ###
+          : \"PERCENTAGE\"\n        }]}\n\n    ### Save model to the storage\n    from
+          datetime import datetime\n    now = datetime.now()\n    DATA_MODEL_VERSION
+          = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint,
+          DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ###
           Save model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH
           = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)
           and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n        shutil.rmtree(DATA_MODEL_V1_PATH)
@@ -516,4 +603,5 @@ spec:
     - {name: train_step_valid_mountpoint, value: /mnt/valid}
     - {name: train_step_model_mountpoint, value: /mnt/model}
     - {name: train_step_model_pvc_existing, value: digits-model}
+    - {name: serve_step_model_pvc_existing, value: digits-model}
   serviceAccountName: pipeline-runner
