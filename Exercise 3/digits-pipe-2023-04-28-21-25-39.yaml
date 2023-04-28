@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T21:17:54.738056',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T21:25:39.229251',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -348,10 +348,11 @@ spec:
         \    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH\
         \ = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,\
         \ exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\
-        \n    ### Save model to the version 1 folder\n    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint,\
-        \ \"1\")\n    import shutil\n    # Delete the old version\n    shutil.rmtree(DATA_MODEL_V1_PATH)\
-        \ \n    # Recreate the version 1 folder\n    os.makedirs(DATA_MODEL_V1_PATH,\
-        \ exist_ok=False)\n    keras.models.save_model(model,DATA_MODEL_V1_PATH)\n\
+        \n    ### Save model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH\
+        \ = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)\
+        \ and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n\
+        \        shutil.rmtree(DATA_MODEL_V1_PATH) \n    # Recreate the version 1\
+        \ folder\n    os.makedirs(DATA_MODEL_V1_PATH, exist_ok=False)\n    keras.models.save_model(model,DATA_MODEL_V1_PATH)\n\
         \n    print(\"Saved model to the model volume twice\")\n\n    from collections\
         \ import namedtuple\n    output = namedtuple('output', ['mlpipeline_ui_metadata',\
         \ 'mlpipeline_metrics'])\n    return output(json.dumps(metadata),json.dumps(metrics))\n\
@@ -462,8 +463,9 @@ spec:
           datetime\n    now = datetime.datetime.now()\n    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH
           = os.path.join(train_step_model_mountpoint, DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH,
           exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ###
-          Save model to the version 1 folder\n    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint,
-          \"1\")\n    import shutil\n    # Delete the old version\n    shutil.rmtree(DATA_MODEL_V1_PATH)
+          Save model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH
+          = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)
+          and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n        shutil.rmtree(DATA_MODEL_V1_PATH)
           \n    # Recreate the version 1 folder\n    os.makedirs(DATA_MODEL_V1_PATH,
           exist_ok=False)\n    keras.models.save_model(model,DATA_MODEL_V1_PATH)\n\n    print(\"Saved
           model to the model volume twice\")\n\n    from collections import namedtuple\n    output

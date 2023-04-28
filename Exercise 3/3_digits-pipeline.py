@@ -234,10 +234,11 @@ def train_step(
     keras.models.save_model(model,DATA_MODEL_VERSION_PATH)
 
     ### Save model to the version 1 folder
-    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint, "1")
     import shutil
-    # Delete the old version
-    shutil.rmtree(DATA_MODEL_V1_PATH) 
+    DATA_MODEL_V1_PATH = os.path.join(train_step_model_mountpoint, "1")
+    if os.path.exists(DATA_MODEL_V1_PATH) and os.path.isdir(DATA_MODEL_V1_PATH):
+        # Delete the old version
+        shutil.rmtree(DATA_MODEL_V1_PATH) 
     # Recreate the version 1 folder
     os.makedirs(DATA_MODEL_V1_PATH, exist_ok=False)
     keras.models.save_model(model,DATA_MODEL_V1_PATH)
