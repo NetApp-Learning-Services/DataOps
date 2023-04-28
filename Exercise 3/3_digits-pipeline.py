@@ -67,8 +67,10 @@ def shape_step(
     TRAIN_X = TRAIN_X /255.0
     DATA_TRAIN_X_FILE = os.path.join(shape_step_train_mountpoint, "train_x.npy")
     np.save(DATA_TRAIN_X_FILE, TRAIN_X)
+    print('File saved: ' + DATA_TRAIN_X_FILE)
     DATA_TRAIN_Y_FILE = os.path.join(shape_step_train_mountpoint, "train_y.npy")
     np.save(DATA_TRAIN_Y_FILE, TRAIN_Y)
+    print('File saved: ' + DATA_TRAIN_Y_FILE)
 
     DATA_VALID_FILE = os.path.join(shape_step_valid_mountpoint,'valid.csv')
     VALID_DF = pd.read_csv(DATA_VALID_FILE)
@@ -81,8 +83,10 @@ def shape_step(
     VALID_X = VALID_X /255.0 
     DATA_VALID_X_FILE = os.path.join(shape_step_valid_mountpoint, "valid_x.npy")
     np.save(DATA_VALID_X_FILE, VALID_X)
+    print('File saved: ' + DATA_VALID_X_FILE)
     DATA_VALID_Y_FILE = os.path.join(shape_step_valid_mountpoint, "valid_y.npy")
     np.save(DATA_VALID_Y_FILE, VALID_Y)
+    print('File saved: ' + DATA_VALID_Y_FILE)
 
 def train_step(    
     no_epochs:int = 1,   
