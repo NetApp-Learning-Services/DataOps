@@ -36,8 +36,16 @@ def clone_step(
 
     from netapp_dataops.k8s import clone_volume
     
-    clone_volume(source_pvc_name=clone_step_train_pvc_existing, new_pvc_name=clone_step_train_pvc, namespace=user_namespace)
-    clone_volume(source_pvc_name=clone_step_valid_pvc_existing, new_pvc_name=clone_step_valid_pvc, namespace=user_namespace)
+    clone_volume(
+        source_pvc_name=clone_step_train_pvc_existing, 
+        new_pvc_name=clone_step_train_pvc, 
+        namespace=user_namespace, 
+        print_output=True)
+    clone_volume(
+        source_pvc_name=clone_step_valid_pvc_existing, 
+        new_pvc_name=clone_step_valid_pvc, 
+        namespace=user_namespace, 
+        print_output=True)
 
 def shape_step(
     shape_step_train_mountpoint: str = "/mnt/train",
@@ -252,11 +260,19 @@ def train_step(
     return output(json.dumps(metadata),json.dumps(metrics))
     
 
-comp_clone = components.create_component_from_func(clone_step, base_image=clone_step_container_image,
+comp_clone = components.create_component_from_func(
+    clone_step, 
+    base_image=clone_step_container_image,
     packages_to_install=['netapp-dataops-k8s==2.4.0', 'kfp==1.8.20', 'jsonschema==4.17.3', 'requests==2.25.1'])
 
-comp_shape = components.func_to_container_op(shape_step, base_image=shape_step_container_image)
-comp_train= components.create_component_from_func(train_step, base_image=train_step_container_image)
+comp_shape = components.func_to_container_op(
+    shape_step, 
+    base_image=shape_step_container_image)
+    
+comp_train= components.create_component_from_func(
+    train_step, 
+    base_image=train_step_container_image, 
+    packages_to_install=['tensorflow==2.12.0'])
 
 @dsl.pipeline(
     name='digits-recognizer-pipeline',

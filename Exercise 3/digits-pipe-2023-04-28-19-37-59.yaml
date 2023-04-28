@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T18:01:45.505068',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T19:37:59.964643',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -37,36 +37,27 @@ spec:
         program_path=$(mktemp)
         printf "%s" "$0" > "$program_path"
         python3 -u "$program_path" "$@"
-      - |
-        def clone_step(
-            user_namespace = "kubeflow-user-example-com",
-            clone_step_train_pvc_existing = "digits-train",
-            clone_step_valid_pvc_existing = "digits-valid",
-            clone_step_valid_pvc = "digits-valid-clone",
-            clone_step_train_pvc = "digits-train-clone"
-        ):
-            print("Data Clone Step")
-
-            """
-            Clone the existing volumes
-            Export clone pvc name
-            """
-
-            from netapp_dataops.k8s import clone_volume
-
-            clone_volume(source_pvc_name=clone_step_train_pvc_existing, new_pvc_name=clone_step_train_pvc, namespace=user_namespace)
-            clone_volume(source_pvc_name=clone_step_valid_pvc_existing, new_pvc_name=clone_step_valid_pvc, namespace=user_namespace)
-
-        import argparse
-        _parser = argparse.ArgumentParser(prog='Clone step', description='')
-        _parser.add_argument("--user-namespace", dest="user_namespace", type=str, required=False, default=argparse.SUPPRESS)
-        _parser.add_argument("--clone-step-train-pvc-existing", dest="clone_step_train_pvc_existing", type=str, required=False, default=argparse.SUPPRESS)
-        _parser.add_argument("--clone-step-valid-pvc-existing", dest="clone_step_valid_pvc_existing", type=str, required=False, default=argparse.SUPPRESS)
-        _parser.add_argument("--clone-step-valid-pvc", dest="clone_step_valid_pvc", type=str, required=False, default=argparse.SUPPRESS)
-        _parser.add_argument("--clone-step-train-pvc", dest="clone_step_train_pvc", type=str, required=False, default=argparse.SUPPRESS)
-        _parsed_args = vars(_parser.parse_args())
-
-        _outputs = clone_step(**_parsed_args)
+      - "def clone_step(\n    user_namespace = \"kubeflow-user-example-com\",\n  \
+        \  clone_step_train_pvc_existing = \"digits-train\",\n    clone_step_valid_pvc_existing\
+        \ = \"digits-valid\",\n    clone_step_valid_pvc = \"digits-valid-clone\",\n\
+        \    clone_step_train_pvc = \"digits-train-clone\"\n):\n    print(\"Data Clone\
+        \ Step\")\n\n    \"\"\"\n    Clone the existing volumes\n    Export clone\
+        \ pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\
+        \n    clone_volume(\n        source_pvc_name=clone_step_train_pvc_existing,\
+        \ \n        new_pvc_name=clone_step_train_pvc, \n        namespace=user_namespace,\
+        \ \n        print_output=True)\n    clone_volume(\n        source_pvc_name=clone_step_valid_pvc_existing,\
+        \ \n        new_pvc_name=clone_step_valid_pvc, \n        namespace=user_namespace,\
+        \ \n        print_output=True)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog='Clone\
+        \ step', description='')\n_parser.add_argument(\"--user-namespace\", dest=\"\
+        user_namespace\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-train-pvc-existing\", dest=\"clone_step_train_pvc_existing\"\
+        , type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-valid-pvc-existing\", dest=\"clone_step_valid_pvc_existing\"\
+        , type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-valid-pvc\", dest=\"clone_step_valid_pvc\", type=str, required=False,\
+        \ default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc\"\
+        , dest=\"clone_step_train_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parsed_args = vars(_parser.parse_args())\n\n_outputs = clone_step(**_parsed_args)\n"
       image: curtisab/ndot-jupyter-scipy:v1alpha1
     inputs:
       parameters:
@@ -99,11 +90,13 @@ spec:
           = \"digits-train\",\n    clone_step_valid_pvc_existing = \"digits-valid\",\n    clone_step_valid_pvc
           = \"digits-valid-clone\",\n    clone_step_train_pvc = \"digits-train-clone\"\n):\n    print(\"Data
           Clone Step\")\n\n    \"\"\"\n    Clone the existing volumes\n    Export
-          clone pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\n    clone_volume(source_pvc_name=clone_step_train_pvc_existing,
-          new_pvc_name=clone_step_train_pvc, namespace=user_namespace)\n    clone_volume(source_pvc_name=clone_step_valid_pvc_existing,
-          new_pvc_name=clone_step_valid_pvc, namespace=user_namespace)\n\nimport argparse\n_parser
-          = argparse.ArgumentParser(prog=''Clone step'', description='''')\n_parser.add_argument(\"--user-namespace\",
-          dest=\"user_namespace\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc-existing\",
+          clone pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\n    clone_volume(\n        source_pvc_name=clone_step_train_pvc_existing,
+          \n        new_pvc_name=clone_step_train_pvc, \n        namespace=user_namespace,
+          \n        print_output=True)\n    clone_volume(\n        source_pvc_name=clone_step_valid_pvc_existing,
+          \n        new_pvc_name=clone_step_valid_pvc, \n        namespace=user_namespace,
+          \n        print_output=True)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog=''Clone
+          step'', description='''')\n_parser.add_argument(\"--user-namespace\", dest=\"user_namespace\",
+          type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc-existing\",
           dest=\"clone_step_train_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc-existing\",
           dest=\"clone_step_valid_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc\",
           dest=\"clone_step_valid_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc\",
@@ -264,6 +257,11 @@ spec:
         '----output-paths', /tmp/outputs/mlpipeline_ui_metadata/data, /tmp/outputs/mlpipeline_metrics/data]
       command:
       - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'tensorflow==2.12.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install
+        --quiet --no-warn-script-location 'tensorflow==2.12.0' --user) && "$0" "$@"
+      - sh
       - -ec
       - |
         program_path=$(mktemp)
@@ -371,13 +369,16 @@ spec:
           {"inputValue": "no_epochs"}]}}, {"if": {"cond": {"isPresent": "optimizer"},
           "then": ["--optimizer", {"inputValue": "optimizer"}]}}, "----output-paths",
           {"outputPath": "mlpipeline_ui_metadata"}, {"outputPath": "mlpipeline_metrics"}],
-          "command": ["sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" >
-          \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n", "def train_step(    \n    no_epochs
-          = 1,\n    optimizer = \"adam\"\n):\n\n    print(\"Model Generation Step\")\n\n    \"\"\"\n    Build
-          the model with Keras API\n    Export model parameters\n    \"\"\"\n    from
-          tensorflow import keras\n    import tensorflow as tf\n    import numpy as
-          np\n    import pandas as pd\n    import json\n\n    # Construct the model
-          structure\n\n    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,
+          "command": ["sh", "-c", "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip
+          install --quiet --no-warn-script-location ''tensorflow==2.12.0'' || PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''tensorflow==2.12.0''
+          --user) && \"$0\" \"$@\"", "sh", "-ec", "program_path=$(mktemp)\nprintf
+          \"%s\" \"$0\" > \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n",
+          "def train_step(    \n    no_epochs = 1,\n    optimizer = \"adam\"\n):\n\n    print(\"Model
+          Generation Step\")\n\n    \"\"\"\n    Build the model with Keras API\n    Export
+          model parameters\n    \"\"\"\n    from tensorflow import keras\n    import
+          tensorflow as tf\n    import numpy as np\n    import pandas as pd\n    import
+          json\n\n    # Construct the model structure\n\n    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,
           (3, 3), activation=''relu'', input_shape=(28,28,1)))\n    model.add(keras.layers.MaxPool2D(2,
           2))\n\n    model.add(keras.layers.Flatten())\n    model.add(keras.layers.Dense(64,
           activation=''relu''))\n\n    model.add(keras.layers.Dense(32, activation=''relu''))\n\n    model.add(keras.layers.Dense(10,
