@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T17:47:43.046933',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-28T18:01:45.505068',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -129,6 +129,8 @@ spec:
       - {name: clone_step_train_pvc_existing}
       - {name: clone_step_valid_pvc}
       - {name: clone_step_valid_pvc_existing}
+      - {name: no_epochs}
+      - {name: optimizer}
       - {name: shape_step_train_mountpoint}
       - {name: shape_step_valid_mountpoint}
       - {name: user_namespace}
@@ -152,6 +154,13 @@ spec:
           - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
           - {name: shape_step_train_mountpoint, value: '{{inputs.parameters.shape_step_train_mountpoint}}'}
           - {name: shape_step_valid_mountpoint, value: '{{inputs.parameters.shape_step_valid_mountpoint}}'}
+      - name: train-step
+        template: train-step
+        dependencies: [shape-step]
+        arguments:
+          parameters:
+          - {name: no_epochs, value: '{{inputs.parameters.no_epochs}}'}
+          - {name: optimizer, value: '{{inputs.parameters.optimizer}}'}
   - name: shape-step
     container:
       args: [--shape-step-train-mountpoint, '{{inputs.parameters.shape_step_train_mountpoint}}',
@@ -249,6 +258,194 @@ spec:
       persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_train_pvc}}'}
     - name: valid
       persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_valid_pvc}}'}
+  - name: train-step
+    container:
+      args: [--no-epochs, '{{inputs.parameters.no_epochs}}', --optimizer, '{{inputs.parameters.optimizer}}',
+        '----output-paths', /tmp/outputs/mlpipeline_ui_metadata/data, /tmp/outputs/mlpipeline_metrics/data]
+      command:
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def train_step(    \n    no_epochs = 1,\n    optimizer = \"adam\"\n):\n\n\
+        \    print(\"Model Generation Step\")\n\n    \"\"\"\n    Build the model with\
+        \ Keras API\n    Export model parameters\n    \"\"\"\n    from tensorflow\
+        \ import keras\n    import tensorflow as tf\n    import numpy as np\n    import\
+        \ pandas as pd\n    import json\n\n    # Construct the model structure\n\n\
+        \    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,\
+        \ (3, 3), activation='relu', input_shape=(28,28,1)))\n    model.add(keras.layers.MaxPool2D(2,\
+        \ 2))\n\n    model.add(keras.layers.Flatten())\n    model.add(keras.layers.Dense(64,\
+        \ activation='relu'))\n\n    model.add(keras.layers.Dense(32, activation='relu'))\n\
+        \n    model.add(keras.layers.Dense(10, activation='softmax')) # Output are\
+        \ 10 classes, numbers from 0-9\n\n    # Show model summary - how it looks\n\
+        \    stringlist = []\n    model.summary(print_fn=lambda x: stringlist.append(x))\n\
+        \    metric_model_summary = \"\\n\".join(stringlist)\n\n    # Compile the\
+        \ model - we want to have a binary outcome\n    model.compile(optimizer=optimizer,\n\
+        \              loss=\"sparse_categorical_crossentropy\",\n              metrics=['accuracy'])\n\
+        \n    # Get the data\n\n    minio_client.fget_object(minio_bucket,\"x_train\"\
+        ,\"/tmp/x_train.npy\")\n    x_train = np.load(\"/tmp/x_train.npy\")\n\n  \
+        \  minio_client.fget_object(minio_bucket,\"y_train\",\"/tmp/y_train.npy\"\
+        )\n    y_train = np.load(\"/tmp/y_train.npy\")\n\n    # Fit the model and\
+        \ return the history while training\n    history = model.fit(\n      x=x_train,\n\
+        \      y=y_train,\n      epochs=no_epochs,\n      batch_size=20,\n    )\n\n\
+        \    minio_client.fget_object(minio_bucket,\"x_test\",\"/tmp/x_test.npy\"\
+        )\n    x_test = np.load(\"/tmp/x_test.npy\")\n\n    minio_client.fget_object(minio_bucket,\"\
+        y_test\",\"/tmp/y_test.npy\")\n    y_test = np.load(\"/tmp/y_test.npy\")\n\
+        \n    # Test the model against the test dataset\n    # Returns the loss value\
+        \ & metrics values for the model in test mode.\n    model_loss, model_accuracy\
+        \ = model.evaluate(x=x_test,y=y_test)\n\n    # Confusion Matrix\n\n    # Generates\
+        \ output predictions for the input samples.\n    test_predictions = model.predict(x=x_test)\n\
+        \n    # Returns the indices of the maximum values along an axis.\n    test_predictions\
+        \ = np.argmax(test_predictions,axis=1) # the prediction outputs 10 values,\
+        \ we take the index number of the highest value, which is the prediction of\
+        \ the model\n\n    # Generate confusion matrix\n    confusion_matrix = tf.math.confusion_matrix(labels=y_test,predictions=test_predictions)\n\
+        \    confusion_matrix = confusion_matrix.numpy()\n    vocab = list(np.unique(y_test))\n\
+        \    data = []\n    for target_index, target_row in enumerate(confusion_matrix):\n\
+        \        for predicted_index, count in enumerate(target_row):\n          \
+        \  data.append((vocab[target_index], vocab[predicted_index], count))\n\n \
+        \   df_cm = pd.DataFrame(data, columns=['target', 'predicted', 'count'])\n\
+        \    cm_csv = df_cm.to_csv(header=False, index=False)\n\n    metadata = {\n\
+        \        \"outputs\": [\n            {\n                \"type\": \"confusion_matrix\"\
+        ,\n                \"format\": \"csv\",\n                \"schema\": [\n \
+        \                   {'name': 'target', 'type': 'CATEGORY'},\n            \
+        \        {'name': 'predicted', 'type': 'CATEGORY'},\n                    {'name':\
+        \ 'count', 'type': 'NUMBER'},\n                  ],\n                \"target_col\"\
+        \ : \"actual\",\n                \"predicted_col\" : \"predicted\",\n    \
+        \            \"source\": cm_csv,\n                \"storage\": \"inline\"\
+        ,\n                \"labels\": [0,1,2,3,4,5,6,7,8,9]\n            },\n   \
+        \         {\n                'storage': 'inline',\n                'source':\
+        \ '''# Model Overview\n## Model Summary\n\n```\n{}\n```\n\n## Model Performance\n\
+        \n**Accuracy**: {}\n**Loss**: {}\n\n'''.format(metric_model_summary,model_accuracy,model_loss),\n\
+        \                'type': 'markdown',\n            }\n        ]\n    }\n\n\
+        \    metrics = {\n      'metrics': [{\n          'name': 'model_accuracy',\n\
+        \          'numberValue':  float(model_accuracy),\n          'format' : \"\
+        PERCENTAGE\"\n        },{\n          'name': 'model_loss',\n          'numberValue':\
+        \  float(model_loss),\n          'format' : \"PERCENTAGE\"\n        }]}\n\n\
+        \    ### Save model to minIO\n\n    keras.models.save_model(model,\"/tmp/detect-digits\"\
+        )\n\n    from minio import Minio\n    import os\n\n    minio_client = Minio(\n\
+        \            \"100.65.11.110:9000\",\n            access_key=\"minio\",\n\
+        \            secret_key=\"minio123\",\n            secure=False\n        )\n\
+        \    minio_bucket = \"mlpipeline\"\n\n    import glob\n\n    def upload_local_directory_to_minio(local_path,\
+        \ bucket_name, minio_path):\n        assert os.path.isdir(local_path)\n\n\
+        \        for local_file in glob.glob(local_path + '/**'):\n            local_file\
+        \ = local_file.replace(os.sep, \"/\") # Replace \\ with / on Windows\n   \
+        \         if not os.path.isfile(local_file):\n                upload_local_directory_to_minio(\n\
+        \                    local_file, bucket_name, minio_path + \"/\" + os.path.basename(local_file))\n\
+        \            else:\n                remote_path = os.path.join(\n        \
+        \            minio_path, local_file[1 + len(local_path):])\n             \
+        \   remote_path = remote_path.replace(\n                    os.sep, \"/\"\
+        )  # Replace \\ with / on Windows\n                minio_client.fput_object(bucket_name,\
+        \ remote_path, local_file)\n\n    upload_local_directory_to_minio(\"/tmp/detect-digits\"\
+        ,minio_bucket,\"models/detect-digits/1/\") # 1 for version 1\n\n    print(\"\
+        Saved model to minIO\")\n\n    from collections import namedtuple\n    output\
+        \ = namedtuple('output', ['mlpipeline_ui_metadata', 'mlpipeline_metrics'])\n\
+        \    return output(json.dumps(metadata),json.dumps(metrics))\n\nimport argparse\n\
+        _parser = argparse.ArgumentParser(prog='Train step', description='')\n_parser.add_argument(\"\
+        --no-epochs\", dest=\"no_epochs\", type=int, required=False, default=argparse.SUPPRESS)\n\
+        _parser.add_argument(\"--optimizer\", dest=\"optimizer\", type=str, required=False,\
+        \ default=argparse.SUPPRESS)\n_parser.add_argument(\"----output-paths\", dest=\"\
+        _output_paths\", type=str, nargs=2)\n_parsed_args = vars(_parser.parse_args())\n\
+        _output_files = _parsed_args.pop(\"_output_paths\", [])\n\n_outputs = train_step(**_parsed_args)\n\
+        \n_output_serializers = [\n    str,\n    str,\n\n]\n\nimport os\nfor idx,\
+        \ output_file in enumerate(_output_files):\n    try:\n        os.makedirs(os.path.dirname(output_file))\n\
+        \    except OSError:\n        pass\n    with open(output_file, 'w') as f:\n\
+        \        f.write(_output_serializers[idx](_outputs[idx]))\n"
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+    inputs:
+      parameters:
+      - {name: no_epochs}
+      - {name: optimizer}
+    outputs:
+      artifacts:
+      - {name: mlpipeline-ui-metadata, path: /tmp/outputs/mlpipeline_ui_metadata/data}
+      - {name: mlpipeline-metrics, path: /tmp/outputs/mlpipeline_metrics/data}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "no_epochs"}, "then": ["--no-epochs",
+          {"inputValue": "no_epochs"}]}}, {"if": {"cond": {"isPresent": "optimizer"},
+          "then": ["--optimizer", {"inputValue": "optimizer"}]}}, "----output-paths",
+          {"outputPath": "mlpipeline_ui_metadata"}, {"outputPath": "mlpipeline_metrics"}],
+          "command": ["sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" >
+          \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n", "def train_step(    \n    no_epochs
+          = 1,\n    optimizer = \"adam\"\n):\n\n    print(\"Model Generation Step\")\n\n    \"\"\"\n    Build
+          the model with Keras API\n    Export model parameters\n    \"\"\"\n    from
+          tensorflow import keras\n    import tensorflow as tf\n    import numpy as
+          np\n    import pandas as pd\n    import json\n\n    # Construct the model
+          structure\n\n    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,
+          (3, 3), activation=''relu'', input_shape=(28,28,1)))\n    model.add(keras.layers.MaxPool2D(2,
+          2))\n\n    model.add(keras.layers.Flatten())\n    model.add(keras.layers.Dense(64,
+          activation=''relu''))\n\n    model.add(keras.layers.Dense(32, activation=''relu''))\n\n    model.add(keras.layers.Dense(10,
+          activation=''softmax'')) # Output are 10 classes, numbers from 0-9\n\n    #
+          Show model summary - how it looks\n    stringlist = []\n    model.summary(print_fn=lambda
+          x: stringlist.append(x))\n    metric_model_summary = \"\\n\".join(stringlist)\n\n    #
+          Compile the model - we want to have a binary outcome\n    model.compile(optimizer=optimizer,\n              loss=\"sparse_categorical_crossentropy\",\n              metrics=[''accuracy''])\n\n    #
+          Get the data\n\n    minio_client.fget_object(minio_bucket,\"x_train\",\"/tmp/x_train.npy\")\n    x_train
+          = np.load(\"/tmp/x_train.npy\")\n\n    minio_client.fget_object(minio_bucket,\"y_train\",\"/tmp/y_train.npy\")\n    y_train
+          = np.load(\"/tmp/y_train.npy\")\n\n    # Fit the model and return the history
+          while training\n    history = model.fit(\n      x=x_train,\n      y=y_train,\n      epochs=no_epochs,\n      batch_size=20,\n    )\n\n    minio_client.fget_object(minio_bucket,\"x_test\",\"/tmp/x_test.npy\")\n    x_test
+          = np.load(\"/tmp/x_test.npy\")\n\n    minio_client.fget_object(minio_bucket,\"y_test\",\"/tmp/y_test.npy\")\n    y_test
+          = np.load(\"/tmp/y_test.npy\")\n\n    # Test the model against the test
+          dataset\n    # Returns the loss value & metrics values for the model in
+          test mode.\n    model_loss, model_accuracy = model.evaluate(x=x_test,y=y_test)\n\n    #
+          Confusion Matrix\n\n    # Generates output predictions for the input samples.\n    test_predictions
+          = model.predict(x=x_test)\n\n    # Returns the indices of the maximum values
+          along an axis.\n    test_predictions = np.argmax(test_predictions,axis=1)
+          # the prediction outputs 10 values, we take the index number of the highest
+          value, which is the prediction of the model\n\n    # Generate confusion
+          matrix\n    confusion_matrix = tf.math.confusion_matrix(labels=y_test,predictions=test_predictions)\n    confusion_matrix
+          = confusion_matrix.numpy()\n    vocab = list(np.unique(y_test))\n    data
+          = []\n    for target_index, target_row in enumerate(confusion_matrix):\n        for
+          predicted_index, count in enumerate(target_row):\n            data.append((vocab[target_index],
+          vocab[predicted_index], count))\n\n    df_cm = pd.DataFrame(data, columns=[''target'',
+          ''predicted'', ''count''])\n    cm_csv = df_cm.to_csv(header=False, index=False)\n\n    metadata
+          = {\n        \"outputs\": [\n            {\n                \"type\": \"confusion_matrix\",\n                \"format\":
+          \"csv\",\n                \"schema\": [\n                    {''name'':
+          ''target'', ''type'': ''CATEGORY''},\n                    {''name'': ''predicted'',
+          ''type'': ''CATEGORY''},\n                    {''name'': ''count'', ''type'':
+          ''NUMBER''},\n                  ],\n                \"target_col\" : \"actual\",\n                \"predicted_col\"
+          : \"predicted\",\n                \"source\": cm_csv,\n                \"storage\":
+          \"inline\",\n                \"labels\": [0,1,2,3,4,5,6,7,8,9]\n            },\n            {\n                ''storage'':
+          ''inline'',\n                ''source'': ''''''# Model Overview\n## Model
+          Summary\n\n```\n{}\n```\n\n## Model Performance\n\n**Accuracy**: {}\n**Loss**:
+          {}\n\n''''''.format(metric_model_summary,model_accuracy,model_loss),\n                ''type'':
+          ''markdown'',\n            }\n        ]\n    }\n\n    metrics = {\n      ''metrics'':
+          [{\n          ''name'': ''model_accuracy'',\n          ''numberValue'':  float(model_accuracy),\n          ''format''
+          : \"PERCENTAGE\"\n        },{\n          ''name'': ''model_loss'',\n          ''numberValue'':  float(model_loss),\n          ''format''
+          : \"PERCENTAGE\"\n        }]}\n\n    ### Save model to minIO\n\n    keras.models.save_model(model,\"/tmp/detect-digits\")\n\n    from
+          minio import Minio\n    import os\n\n    minio_client = Minio(\n            \"100.65.11.110:9000\",\n            access_key=\"minio\",\n            secret_key=\"minio123\",\n            secure=False\n        )\n    minio_bucket
+          = \"mlpipeline\"\n\n    import glob\n\n    def upload_local_directory_to_minio(local_path,
+          bucket_name, minio_path):\n        assert os.path.isdir(local_path)\n\n        for
+          local_file in glob.glob(local_path + ''/**''):\n            local_file =
+          local_file.replace(os.sep, \"/\") # Replace \\ with / on Windows\n            if
+          not os.path.isfile(local_file):\n                upload_local_directory_to_minio(\n                    local_file,
+          bucket_name, minio_path + \"/\" + os.path.basename(local_file))\n            else:\n                remote_path
+          = os.path.join(\n                    minio_path, local_file[1 + len(local_path):])\n                remote_path
+          = remote_path.replace(\n                    os.sep, \"/\")  # Replace \\
+          with / on Windows\n                minio_client.fput_object(bucket_name,
+          remote_path, local_file)\n\n    upload_local_directory_to_minio(\"/tmp/detect-digits\",minio_bucket,\"models/detect-digits/1/\")
+          # 1 for version 1\n\n    print(\"Saved model to minIO\")\n\n    from collections
+          import namedtuple\n    output = namedtuple(''output'', [''mlpipeline_ui_metadata'',
+          ''mlpipeline_metrics''])\n    return output(json.dumps(metadata),json.dumps(metrics))\n\nimport
+          argparse\n_parser = argparse.ArgumentParser(prog=''Train step'', description='''')\n_parser.add_argument(\"--no-epochs\",
+          dest=\"no_epochs\", type=int, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--optimizer\",
+          dest=\"optimizer\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"----output-paths\",
+          dest=\"_output_paths\", type=str, nargs=2)\n_parsed_args = vars(_parser.parse_args())\n_output_files
+          = _parsed_args.pop(\"_output_paths\", [])\n\n_outputs = train_step(**_parsed_args)\n\n_output_serializers
+          = [\n    str,\n    str,\n\n]\n\nimport os\nfor idx, output_file in enumerate(_output_files):\n    try:\n        os.makedirs(os.path.dirname(output_file))\n    except
+          OSError:\n        pass\n    with open(output_file, ''w'') as f:\n        f.write(_output_serializers[idx](_outputs[idx]))\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "1", "name": "no_epochs", "optional": true, "type": "Integer"}, {"default":
+          "adam", "name": "optimizer", "optional": true, "type": "String"}], "name":
+          "Train step", "outputs": [{"name": "mlpipeline_ui_metadata", "type": "UI_metadata"},
+          {"name": "mlpipeline_metrics", "type": "Metrics"}]}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"no_epochs": "{{inputs.parameters.no_epochs}}",
+          "optimizer": "{{inputs.parameters.optimizer}}"}'}
   arguments:
     parameters:
     - {name: no_epochs, value: '1'}
