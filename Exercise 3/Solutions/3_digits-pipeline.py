@@ -5,21 +5,13 @@ import kfp.onprem as onprem
 import kfp.components as components
 from typing import NamedTuple
 
-# Define pipeline variables and set default values
+# Container images
 clone_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
 shape_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
 train_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
-# train_step_train_pvc: str = "digits-train-clone"
-# train_step_train_mountpoint: str = "/mnt/train"
-# train_step_valid_pvc: str = "digits-valid-clone"
-# train_step_valid_mountpoint: str = "/mnt/valid"
-# train_step_model_pvc_existing: str = "digits-model"
-# train_step_model_mountpoint: str = "/mnt/model"
+serve_step_container_image: str = "public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0"
 
-# serve_step_container_image: str = "curtisab/ndot-jupyter-scipy:v1alpha1"
-# serve_step_model_pvc_existing: str = "digits-model"
-# serve_step_model_mountpoint: str = "/mnt/model"
-
+# Clone Volumes Step
 def clone_step(
     user_namespace: str = "kubeflow-user-example-com",
     clone_step_train_pvc_existing: str = "digits-train",
@@ -47,6 +39,7 @@ def clone_step(
         namespace=user_namespace, 
         print_output=True)
 
+# Shape Data Step
 def shape_step(
     shape_step_train_mountpoint: str = "/mnt/train",
     shape_step_valid_mountpoint: str = "/mnt/valid"
@@ -88,6 +81,7 @@ def shape_step(
     np.save(DATA_VALID_Y_FILE, VALID_Y)
     print('File saved: ' + DATA_VALID_Y_FILE)
 
+# Train Model Step
 def train_step(    
     no_epochs:int = 1,   
     optimizer: str = "adam",
@@ -249,6 +243,7 @@ def train_step(
     output = namedtuple('output', ['mlpipeline_ui_metadata', 'mlpipeline_metrics'])
     return output(json.dumps(metadata),json.dumps(metrics))
 
+# Serve Model Step
 def serve_step(
     train_step_model_pvc_existing: str = "digits-model"
 ):
@@ -292,6 +287,7 @@ def serve_step(
     KServe.create(isvc)
     
 
+# Create components from the step functions
 comp_clone = components.create_component_from_func(
     clone_step, 
     base_image=clone_step_container_image,
@@ -308,14 +304,16 @@ comp_train= components.create_component_from_func(
 
 comp_serve = components.create_component_from_func(
     serve_step,
-    base_image="public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0",
+    base_image=serve_step_container_image,
     packages_to_install=['kserve==0.10.1'])
 
+# Define the Pipeline Metadata
 @dsl.pipeline(
     name='digits-recognizer-pipeline',
     description='Detect digits'
 )
 
+# Main Method To Construct the Pipeline
 def create_pipe(
     no_epochs: int = 1,
     optimizer = "adam",
@@ -370,7 +368,7 @@ def create_pipe(
     step4 = comp_serve(serve_step_model_pvc_existing)
     step4.after(step3)
 
-
+# The MAIN Function That Runs All Previous Code
 if __name__ == "__main__":
     client = kfp.Client()
 
