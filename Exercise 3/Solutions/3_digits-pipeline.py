@@ -16,8 +16,8 @@ def clone_step(
     user_namespace: str = "kubeflow-user-example-com",
     clone_step_train_pvc_existing: str = "digits-train",
     clone_step_valid_pvc_existing: str = "digits-valid",
-    clone_step_valid_pvc: str = "digits-valid-clone",
-    clone_step_train_pvc: str = "digits-train-clone"
+    clone_step_train_pvc: str = "digits-train-clone",
+    clone_step_valid_pvc: str = "digits-valid-clone"
 ):
     print("Data Clone Step")
     
@@ -245,7 +245,8 @@ def train_step(
 
 # Serve Model Step
 def serve_step(
-    train_step_model_pvc_existing: str = "digits-model"
+    train_step_model_pvc_existing: str = "digits-model",
+    user_namespace: str = "kubeflow-user-example-com"
 ):
     """
     Create kserve instance
@@ -262,7 +263,7 @@ def serve_step(
 
     print("Model Serve Step")
 
-    namespace = utils.get_default_target_namespace()
+    namespace = user_namespace
 
     now = datetime.now()
     v = now.strftime("%Y-%m-%d--%H-%M-%S")
@@ -312,7 +313,6 @@ comp_serve = components.create_component_from_func(
     name='digits-recognizer-pipeline',
     description='Detect digits'
 )
-
 # Main Method To Construct the Pipeline
 def create_pipe(
     no_epochs: int = 1,
@@ -365,7 +365,9 @@ def create_pipe(
         onprem.mount_pvc(train_step_model_pvc_existing, 'model', train_step_model_mountpoint)
     )
     step3.after(step2)
-    step4 = comp_serve(serve_step_model_pvc_existing)
+    step4 = comp_serve(
+        serve_step_model_pvc_existing, 
+        user_namespace)
     step4.after(step3)
 
 # The MAIN Function That Runs All Previous Code

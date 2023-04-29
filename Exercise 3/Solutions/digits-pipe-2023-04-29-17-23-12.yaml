@@ -1,0 +1,618 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: digits-recognizer-pipeline-
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-29T17:23:12.943072',
+    pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
+      [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
+      {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
+      "name": "user_namespace", "optional": true}, {"default": "digits-train", "name":
+      "clone_step_train_pvc_existing", "optional": true}, {"default": "digits-valid",
+      "name": "clone_step_valid_pvc_existing", "optional": true}, {"default": "digits-train-clone",
+      "name": "clone_step_train_pvc", "optional": true}, {"default": "digits-valid-clone",
+      "name": "clone_step_valid_pvc", "optional": true}, {"default": "/mnt/train",
+      "name": "shape_step_train_mountpoint", "optional": true}, {"default": "/mnt/valid",
+      "name": "shape_step_valid_mountpoint", "optional": true}, {"default": "/mnt/train",
+      "name": "train_step_train_mountpoint", "optional": true}, {"default": "/mnt/valid",
+      "name": "train_step_valid_mountpoint", "optional": true}, {"default": "/mnt/model",
+      "name": "train_step_model_mountpoint", "optional": true}, {"default": "digits-model",
+      "name": "train_step_model_pvc_existing", "optional": true}, {"default": "digits-model",
+      "name": "serve_step_model_pvc_existing", "optional": true}], "name": "digits-recognizer-pipeline"}'}
+  labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20}
+spec:
+  entrypoint: digits-recognizer-pipeline
+  templates:
+  - name: clone-step
+    container:
+      args: [--user-namespace, '{{inputs.parameters.user_namespace}}', --clone-step-train-pvc-existing,
+        '{{inputs.parameters.clone_step_train_pvc_existing}}', --clone-step-valid-pvc-existing,
+        '{{inputs.parameters.clone_step_valid_pvc_existing}}', --clone-step-train-pvc,
+        '{{inputs.parameters.clone_step_train_pvc}}', --clone-step-valid-pvc, '{{inputs.parameters.clone_step_valid_pvc}}']
+      command:
+      - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'netapp-dataops-k8s==2.4.0' 'kfp==1.8.20' 'jsonschema==4.17.3' 'requests==2.25.1'
+        || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'netapp-dataops-k8s==2.4.0' 'kfp==1.8.20' 'jsonschema==4.17.3' 'requests==2.25.1'
+        --user) && "$0" "$@"
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def clone_step(\n    user_namespace = \"kubeflow-user-example-com\",\n  \
+        \  clone_step_train_pvc_existing = \"digits-train\",\n    clone_step_valid_pvc_existing\
+        \ = \"digits-valid\",\n    clone_step_train_pvc = \"digits-train-clone\",\n\
+        \    clone_step_valid_pvc = \"digits-valid-clone\"\n):\n    print(\"Data Clone\
+        \ Step\")\n\n    \"\"\"\n    Clone the existing volumes\n    Export clone\
+        \ pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\
+        \n    clone_volume(\n        source_pvc_name=clone_step_train_pvc_existing,\
+        \ \n        new_pvc_name=clone_step_train_pvc, \n        namespace=user_namespace,\
+        \ \n        print_output=True)\n    clone_volume(\n        source_pvc_name=clone_step_valid_pvc_existing,\
+        \ \n        new_pvc_name=clone_step_valid_pvc, \n        namespace=user_namespace,\
+        \ \n        print_output=True)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog='Clone\
+        \ step', description='')\n_parser.add_argument(\"--user-namespace\", dest=\"\
+        user_namespace\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-train-pvc-existing\", dest=\"clone_step_train_pvc_existing\"\
+        , type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-valid-pvc-existing\", dest=\"clone_step_valid_pvc_existing\"\
+        , type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --clone-step-train-pvc\", dest=\"clone_step_train_pvc\", type=str, required=False,\
+        \ default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc\"\
+        , dest=\"clone_step_valid_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parsed_args = vars(_parser.parse_args())\n\n_outputs = clone_step(**_parsed_args)\n"
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_train_pvc_existing}
+      - {name: clone_step_valid_pvc}
+      - {name: clone_step_valid_pvc_existing}
+      - {name: user_namespace}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "user_namespace"}, "then": ["--user-namespace",
+          {"inputValue": "user_namespace"}]}}, {"if": {"cond": {"isPresent": "clone_step_train_pvc_existing"},
+          "then": ["--clone-step-train-pvc-existing", {"inputValue": "clone_step_train_pvc_existing"}]}},
+          {"if": {"cond": {"isPresent": "clone_step_valid_pvc_existing"}, "then":
+          ["--clone-step-valid-pvc-existing", {"inputValue": "clone_step_valid_pvc_existing"}]}},
+          {"if": {"cond": {"isPresent": "clone_step_train_pvc"}, "then": ["--clone-step-train-pvc",
+          {"inputValue": "clone_step_train_pvc"}]}}, {"if": {"cond": {"isPresent":
+          "clone_step_valid_pvc"}, "then": ["--clone-step-valid-pvc", {"inputValue":
+          "clone_step_valid_pvc"}]}}], "command": ["sh", "-c", "(PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''netapp-dataops-k8s==2.4.0''
+          ''kfp==1.8.20'' ''jsonschema==4.17.3'' ''requests==2.25.1'' || PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''netapp-dataops-k8s==2.4.0''
+          ''kfp==1.8.20'' ''jsonschema==4.17.3'' ''requests==2.25.1'' --user) && \"$0\"
+          \"$@\"", "sh", "-ec", "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def clone_step(\n    user_namespace = \"kubeflow-user-example-com\",\n    clone_step_train_pvc_existing
+          = \"digits-train\",\n    clone_step_valid_pvc_existing = \"digits-valid\",\n    clone_step_train_pvc
+          = \"digits-train-clone\",\n    clone_step_valid_pvc = \"digits-valid-clone\"\n):\n    print(\"Data
+          Clone Step\")\n\n    \"\"\"\n    Clone the existing volumes\n    Export
+          clone pvc name\n    \"\"\"\n\n    from netapp_dataops.k8s import clone_volume\n\n    clone_volume(\n        source_pvc_name=clone_step_train_pvc_existing,
+          \n        new_pvc_name=clone_step_train_pvc, \n        namespace=user_namespace,
+          \n        print_output=True)\n    clone_volume(\n        source_pvc_name=clone_step_valid_pvc_existing,
+          \n        new_pvc_name=clone_step_valid_pvc, \n        namespace=user_namespace,
+          \n        print_output=True)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog=''Clone
+          step'', description='''')\n_parser.add_argument(\"--user-namespace\", dest=\"user_namespace\",
+          type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc-existing\",
+          dest=\"clone_step_train_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc-existing\",
+          dest=\"clone_step_valid_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-train-pvc\",
+          dest=\"clone_step_train_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--clone-step-valid-pvc\",
+          dest=\"clone_step_valid_pvc\", type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = clone_step(**_parsed_args)\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "kubeflow-user-example-com", "name": "user_namespace", "optional": true,
+          "type": "String"}, {"default": "digits-train", "name": "clone_step_train_pvc_existing",
+          "optional": true, "type": "String"}, {"default": "digits-valid", "name":
+          "clone_step_valid_pvc_existing", "optional": true, "type": "String"}, {"default":
+          "digits-train-clone", "name": "clone_step_train_pvc", "optional": true,
+          "type": "String"}, {"default": "digits-valid-clone", "name": "clone_step_valid_pvc",
+          "optional": true, "type": "String"}], "name": "Clone step"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"clone_step_train_pvc": "{{inputs.parameters.clone_step_train_pvc}}",
+          "clone_step_train_pvc_existing": "{{inputs.parameters.clone_step_train_pvc_existing}}",
+          "clone_step_valid_pvc": "{{inputs.parameters.clone_step_valid_pvc}}", "clone_step_valid_pvc_existing":
+          "{{inputs.parameters.clone_step_valid_pvc_existing}}", "user_namespace":
+          "{{inputs.parameters.user_namespace}}"}'}
+  - name: digits-recognizer-pipeline
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_train_pvc_existing}
+      - {name: clone_step_valid_pvc}
+      - {name: clone_step_valid_pvc_existing}
+      - {name: no_epochs}
+      - {name: optimizer}
+      - {name: serve_step_model_pvc_existing}
+      - {name: shape_step_train_mountpoint}
+      - {name: shape_step_valid_mountpoint}
+      - {name: train_step_model_mountpoint}
+      - {name: train_step_model_pvc_existing}
+      - {name: train_step_train_mountpoint}
+      - {name: train_step_valid_mountpoint}
+      - {name: user_namespace}
+    dag:
+      tasks:
+      - name: clone-step
+        template: clone-step
+        arguments:
+          parameters:
+          - {name: clone_step_train_pvc, value: '{{inputs.parameters.clone_step_train_pvc}}'}
+          - {name: clone_step_train_pvc_existing, value: '{{inputs.parameters.clone_step_train_pvc_existing}}'}
+          - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
+          - {name: clone_step_valid_pvc_existing, value: '{{inputs.parameters.clone_step_valid_pvc_existing}}'}
+          - {name: user_namespace, value: '{{inputs.parameters.user_namespace}}'}
+      - name: serve-step
+        template: serve-step
+        dependencies: [train-step]
+        arguments:
+          parameters:
+          - {name: serve_step_model_pvc_existing, value: '{{inputs.parameters.serve_step_model_pvc_existing}}'}
+          - {name: user_namespace, value: '{{inputs.parameters.user_namespace}}'}
+      - name: shape-step
+        template: shape-step
+        dependencies: [clone-step]
+        arguments:
+          parameters:
+          - {name: clone_step_train_pvc, value: '{{inputs.parameters.clone_step_train_pvc}}'}
+          - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
+          - {name: shape_step_train_mountpoint, value: '{{inputs.parameters.shape_step_train_mountpoint}}'}
+          - {name: shape_step_valid_mountpoint, value: '{{inputs.parameters.shape_step_valid_mountpoint}}'}
+      - name: train-step
+        template: train-step
+        dependencies: [shape-step]
+        arguments:
+          parameters:
+          - {name: clone_step_train_pvc, value: '{{inputs.parameters.clone_step_train_pvc}}'}
+          - {name: clone_step_valid_pvc, value: '{{inputs.parameters.clone_step_valid_pvc}}'}
+          - {name: no_epochs, value: '{{inputs.parameters.no_epochs}}'}
+          - {name: optimizer, value: '{{inputs.parameters.optimizer}}'}
+          - {name: train_step_model_mountpoint, value: '{{inputs.parameters.train_step_model_mountpoint}}'}
+          - {name: train_step_model_pvc_existing, value: '{{inputs.parameters.train_step_model_pvc_existing}}'}
+          - {name: train_step_train_mountpoint, value: '{{inputs.parameters.train_step_train_mountpoint}}'}
+          - {name: train_step_valid_mountpoint, value: '{{inputs.parameters.train_step_valid_mountpoint}}'}
+  - name: serve-step
+    container:
+      args: [--train-step-model-pvc-existing, '{{inputs.parameters.serve_step_model_pvc_existing}}',
+        --user-namespace, '{{inputs.parameters.user_namespace}}']
+      command:
+      - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'kserve==0.10.1' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install
+        --quiet --no-warn-script-location 'kserve==0.10.1' --user) && "$0" "$@"
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def serve_step(\n    train_step_model_pvc_existing = \"digits-model\",\n\
+        \    user_namespace = \"kubeflow-user-example-com\"\n):\n    \"\"\"\n    Create\
+        \ kserve instance\n    \"\"\"\n    from kubernetes import client \n    from\
+        \ kserve import KServeClient\n    from kserve import constants\n    from kserve\
+        \ import utils\n    from kserve import V1beta1InferenceService\n    from kserve\
+        \ import V1beta1InferenceServiceSpec\n    from kserve import V1beta1PredictorSpec\n\
+        \    from kserve import V1beta1TFServingSpec\n    from datetime import datetime\n\
+        \n    print(\"Model Serve Step\")\n\n    namespace = user_namespace\n\n  \
+        \  now = datetime.now()\n    v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n\
+        \    name='digits-recognizer-{}'.format(v)\n    kserve_version='v1beta1'\n\
+        \    api_version = constants.KSERVE_GROUP + '/' + kserve_version\n    pvc_path\
+        \ = \"pvc://\" + train_step_model_pvc_existing + '/1/'\n    print(\"Path to\
+        \ pvc: \" + pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n\
+        \                                   kind=constants.KSERVE_KIND,\n        \
+        \                           metadata=client.V1ObjectMeta(\n              \
+        \                         name=name, namespace=namespace, annotations={'sidecar.istio.io/inject':'false'}),\n\
+        \                                   spec=V1beta1InferenceServiceSpec(\n  \
+        \                                 predictor=V1beta1PredictorSpec(\n      \
+        \                                 tensorflow=(V1beta1TFServingSpec(\n    \
+        \                                       storage_uri=pvc_path))))\n    )\n\n\
+        \    KServe = KServeClient()\n    KServe.create(isvc)\n\nimport argparse\n\
+        _parser = argparse.ArgumentParser(prog='Serve step', description='Create kserve\
+        \ instance')\n_parser.add_argument(\"--train-step-model-pvc-existing\", dest=\"\
+        train_step_model_pvc_existing\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parser.add_argument(\"--user-namespace\", dest=\"user_namespace\", type=str,\
+        \ required=False, default=argparse.SUPPRESS)\n_parsed_args = vars(_parser.parse_args())\n\
+        \n_outputs = serve_step(**_parsed_args)\n"
+      image: public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0
+    inputs:
+      parameters:
+      - {name: serve_step_model_pvc_existing}
+      - {name: user_namespace}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"description": "Create
+          kserve instance", "implementation": {"container": {"args": [{"if": {"cond":
+          {"isPresent": "train_step_model_pvc_existing"}, "then": ["--train-step-model-pvc-existing",
+          {"inputValue": "train_step_model_pvc_existing"}]}}, {"if": {"cond": {"isPresent":
+          "user_namespace"}, "then": ["--user-namespace", {"inputValue": "user_namespace"}]}}],
+          "command": ["sh", "-c", "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip
+          install --quiet --no-warn-script-location ''kserve==0.10.1'' || PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''kserve==0.10.1''
+          --user) && \"$0\" \"$@\"", "sh", "-ec", "program_path=$(mktemp)\nprintf
+          \"%s\" \"$0\" > \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n",
+          "def serve_step(\n    train_step_model_pvc_existing = \"digits-model\",\n    user_namespace
+          = \"kubeflow-user-example-com\"\n):\n    \"\"\"\n    Create kserve instance\n    \"\"\"\n    from
+          kubernetes import client \n    from kserve import KServeClient\n    from
+          kserve import constants\n    from kserve import utils\n    from kserve import
+          V1beta1InferenceService\n    from kserve import V1beta1InferenceServiceSpec\n    from
+          kserve import V1beta1PredictorSpec\n    from kserve import V1beta1TFServingSpec\n    from
+          datetime import datetime\n\n    print(\"Model Serve Step\")\n\n    namespace
+          = user_namespace\n\n    now = datetime.now()\n    v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n    name=''digits-recognizer-{}''.format(v)\n    kserve_version=''v1beta1''\n    api_version
+          = constants.KSERVE_GROUP + ''/'' + kserve_version\n    pvc_path = \"pvc://\"
+          + train_step_model_pvc_existing + ''/1/''\n    print(\"Path to pvc: \" +
+          pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n                                   kind=constants.KSERVE_KIND,\n                                   metadata=client.V1ObjectMeta(\n                                       name=name,
+          namespace=namespace, annotations={''sidecar.istio.io/inject'':''false''}),\n                                   spec=V1beta1InferenceServiceSpec(\n                                   predictor=V1beta1PredictorSpec(\n                                       tensorflow=(V1beta1TFServingSpec(\n                                           storage_uri=pvc_path))))\n    )\n\n    KServe
+          = KServeClient()\n    KServe.create(isvc)\n\nimport argparse\n_parser =
+          argparse.ArgumentParser(prog=''Serve step'', description=''Create kserve
+          instance'')\n_parser.add_argument(\"--train-step-model-pvc-existing\", dest=\"train_step_model_pvc_existing\",
+          type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--user-namespace\",
+          dest=\"user_namespace\", type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = serve_step(**_parsed_args)\n"],
+          "image": "public.ecr.aws/j1r0q0g6/notebooks/notebook-servers/jupyter-tensorflow-full:v1.5.0"}},
+          "inputs": [{"default": "digits-model", "name": "train_step_model_pvc_existing",
+          "optional": true, "type": "String"}, {"default": "kubeflow-user-example-com",
+          "name": "user_namespace", "optional": true, "type": "String"}], "name":
+          "Serve step"}', pipelines.kubeflow.org/component_ref: '{}', pipelines.kubeflow.org/arguments.parameters: '{"train_step_model_pvc_existing":
+          "{{inputs.parameters.serve_step_model_pvc_existing}}", "user_namespace":
+          "{{inputs.parameters.user_namespace}}"}'}
+  - name: shape-step
+    container:
+      args: [--shape-step-train-mountpoint, '{{inputs.parameters.shape_step_train_mountpoint}}',
+        --shape-step-valid-mountpoint, '{{inputs.parameters.shape_step_valid_mountpoint}}']
+      command:
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def shape_step(\n    shape_step_train_mountpoint = \"/mnt/train\",\n    shape_step_valid_mountpoint\
+        \ = \"/mnt/valid\"\n) :\n\n    import os\n    import numpy as np\n    import\
+        \ pandas as pd\n\n    DATA_TRAIN_FILE = os.path.join(shape_step_train_mountpoint,'train.csv')\n\
+        \    TRAIN_DF = pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop('label',\
+        \ axis=1)\n    TRAIN_Y = TRAIN_DF.label\n    # Reshape image in 3 dimensions\
+        \ (height = 28px, width = 28px , channel = 1)... This is needed for the Keras\
+        \ API\n    TRAIN_X = TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the\
+        \ data\n    # Each pixel has a value between 0-255. Here we divide by 255,\
+        \ to get values from 0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE\
+        \ = os.path.join(shape_step_train_mountpoint, \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE,\
+        \ TRAIN_X)\n    print('File saved: ' + DATA_TRAIN_X_FILE)\n    DATA_TRAIN_Y_FILE\
+        \ = os.path.join(shape_step_train_mountpoint, \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE,\
+        \ TRAIN_Y)\n    print('File saved: ' + DATA_TRAIN_Y_FILE)\n\n    DATA_VALID_FILE\
+        \ = os.path.join(shape_step_valid_mountpoint,'valid.csv')\n    VALID_DF =\
+        \ pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop('label', axis=1)\n\
+        \    VALID_Y = VALID_DF.label\n    # Reshape image in 3 dimensions (height\
+        \ = 28px, width = 28px , channel = 1)... This is needed for the Keras API\n\
+        \    VALID_X = VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n\
+        \    # Each pixel has a value between 0-255. Here we divide by 255, to get\
+        \ values from 0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE =\
+        \ os.path.join(shape_step_valid_mountpoint, \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE,\
+        \ VALID_X)\n    print('File saved: ' + DATA_VALID_X_FILE)\n    DATA_VALID_Y_FILE\
+        \ = os.path.join(shape_step_valid_mountpoint, \"valid_y.npy\")\n    np.save(DATA_VALID_Y_FILE,\
+        \ VALID_Y)\n    print('File saved: ' + DATA_VALID_Y_FILE)\n\nimport argparse\n\
+        _parser = argparse.ArgumentParser(prog='Shape step', description='')\n_parser.add_argument(\"\
+        --shape-step-train-mountpoint\", dest=\"shape_step_train_mountpoint\", type=str,\
+        \ required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--shape-step-valid-mountpoint\"\
+        , dest=\"shape_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parsed_args = vars(_parser.parse_args())\n\n_outputs = shape_step(**_parsed_args)\n"
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.shape_step_train_mountpoint}}', name: train}
+      - {mountPath: '{{inputs.parameters.shape_step_valid_mountpoint}}', name: valid}
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_valid_pvc}
+      - {name: shape_step_train_mountpoint}
+      - {name: shape_step_valid_mountpoint}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "shape_step_train_mountpoint"},
+          "then": ["--shape-step-train-mountpoint", {"inputValue": "shape_step_train_mountpoint"}]}},
+          {"if": {"cond": {"isPresent": "shape_step_valid_mountpoint"}, "then": ["--shape-step-valid-mountpoint",
+          {"inputValue": "shape_step_valid_mountpoint"}]}}], "command": ["sh", "-ec",
+          "program_path=$(mktemp)\nprintf \"%s\" \"$0\" > \"$program_path\"\npython3
+          -u \"$program_path\" \"$@\"\n", "def shape_step(\n    shape_step_train_mountpoint
+          = \"/mnt/train\",\n    shape_step_valid_mountpoint = \"/mnt/valid\"\n) :\n\n    import
+          os\n    import numpy as np\n    import pandas as pd\n\n    DATA_TRAIN_FILE
+          = os.path.join(shape_step_train_mountpoint,''train.csv'')\n    TRAIN_DF
+          = pd.read_csv(DATA_TRAIN_FILE)\n    TRAIN_X = TRAIN_DF.drop(''label'', axis=1)\n    TRAIN_Y
+          = TRAIN_DF.label\n    # Reshape image in 3 dimensions (height = 28px, width
+          = 28px , channel = 1)... This is needed for the Keras API\n    TRAIN_X =
+          TRAIN_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n    # Each
+          pixel has a value between 0-255. Here we divide by 255, to get values from
+          0-1\n    TRAIN_X = TRAIN_X /255.0\n    DATA_TRAIN_X_FILE = os.path.join(shape_step_train_mountpoint,
+          \"train_x.npy\")\n    np.save(DATA_TRAIN_X_FILE, TRAIN_X)\n    print(''File
+          saved: '' + DATA_TRAIN_X_FILE)\n    DATA_TRAIN_Y_FILE = os.path.join(shape_step_train_mountpoint,
+          \"train_y.npy\")\n    np.save(DATA_TRAIN_Y_FILE, TRAIN_Y)\n    print(''File
+          saved: '' + DATA_TRAIN_Y_FILE)\n\n    DATA_VALID_FILE = os.path.join(shape_step_valid_mountpoint,''valid.csv'')\n    VALID_DF
+          = pd.read_csv(DATA_VALID_FILE)\n    VALID_X = VALID_DF.drop(''label'', axis=1)\n    VALID_Y
+          = VALID_DF.label\n    # Reshape image in 3 dimensions (height = 28px, width
+          = 28px , channel = 1)... This is needed for the Keras API\n    VALID_X =
+          VALID_X.values.reshape(-1,28,28,1)\n    # Normalize the data\n    # Each
+          pixel has a value between 0-255. Here we divide by 255, to get values from
+          0-1\n    VALID_X = VALID_X /255.0 \n    DATA_VALID_X_FILE = os.path.join(shape_step_valid_mountpoint,
+          \"valid_x.npy\")\n    np.save(DATA_VALID_X_FILE, VALID_X)\n    print(''File
+          saved: '' + DATA_VALID_X_FILE)\n    DATA_VALID_Y_FILE = os.path.join(shape_step_valid_mountpoint,
+          \"valid_y.npy\")\n    np.save(DATA_VALID_Y_FILE, VALID_Y)\n    print(''File
+          saved: '' + DATA_VALID_Y_FILE)\n\nimport argparse\n_parser = argparse.ArgumentParser(prog=''Shape
+          step'', description='''')\n_parser.add_argument(\"--shape-step-train-mountpoint\",
+          dest=\"shape_step_train_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--shape-step-valid-mountpoint\",
+          dest=\"shape_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parsed_args
+          = vars(_parser.parse_args())\n\n_outputs = shape_step(**_parsed_args)\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "/mnt/train", "name": "shape_step_train_mountpoint", "optional": true, "type":
+          "String"}, {"default": "/mnt/valid", "name": "shape_step_valid_mountpoint",
+          "optional": true, "type": "String"}], "name": "Shape step"}', pipelines.kubeflow.org/component_ref: '{}',
+        pipelines.kubeflow.org/arguments.parameters: '{"shape_step_train_mountpoint":
+          "{{inputs.parameters.shape_step_train_mountpoint}}", "shape_step_valid_mountpoint":
+          "{{inputs.parameters.shape_step_valid_mountpoint}}"}'}
+    volumes:
+    - name: train
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_train_pvc}}'}
+    - name: valid
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_valid_pvc}}'}
+  - name: train-step
+    container:
+      args: [--no-epochs, '{{inputs.parameters.no_epochs}}', --optimizer, '{{inputs.parameters.optimizer}}',
+        --train-step-train-mountpoint, '{{inputs.parameters.train_step_train_mountpoint}}',
+        --train-step-valid-mountpoint, '{{inputs.parameters.train_step_valid_mountpoint}}',
+        --train-step-model-mountpoint, '{{inputs.parameters.train_step_model_mountpoint}}',
+        '----output-paths', /tmp/outputs/mlpipeline_ui_metadata/data, /tmp/outputs/mlpipeline_metrics/data]
+      command:
+      - sh
+      - -c
+      - (PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location
+        'tensorflow==2.12.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install
+        --quiet --no-warn-script-location 'tensorflow==2.12.0' --user) && "$0" "$@"
+      - sh
+      - -ec
+      - |
+        program_path=$(mktemp)
+        printf "%s" "$0" > "$program_path"
+        python3 -u "$program_path" "$@"
+      - "def train_step(    \n    no_epochs = 1,   \n    optimizer = \"adam\",\n \
+        \   train_step_train_mountpoint = \"/mnt/train\",\n    train_step_valid_mountpoint\
+        \ = \"/mnt/valid\",\n    train_step_model_mountpoint = \"/mnt/model\"\n):\n\
+        \n    print(\"Model Generation Step\")\n\n    \"\"\"\n    Build the model\
+        \ with Keras API\n    Export model parameters\n    \"\"\"\n    import os\n\
+        \    from tensorflow import keras\n    import tensorflow as tf\n    import\
+        \ numpy as np\n    import pandas as pd\n    import json\n\n    # Construct\
+        \ the model structure\n\n    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,\
+        \ (3, 3), activation='relu', input_shape=(28,28,1)))\n    model.add(keras.layers.MaxPool2D(2,\
+        \ 2))\n\n    model.add(keras.layers.Flatten())\n    model.add(keras.layers.Dense(64,\
+        \ activation='relu'))\n\n    model.add(keras.layers.Dense(32, activation='relu'))\n\
+        \n    model.add(keras.layers.Dense(10, activation='softmax')) # Output are\
+        \ 10 classes, numbers from 0-9\n\n    # Show model summary - how it looks\n\
+        \    stringlist = []\n    model.summary(print_fn=lambda x: stringlist.append(x))\n\
+        \    metric_model_summary = \"\\n\".join(stringlist)\n\n    # Compile the\
+        \ model - we want to have a binary outcome\n    model.compile(optimizer=optimizer,\n\
+        \              loss=\"sparse_categorical_crossentropy\",\n              metrics=['accuracy'])\n\
+        \n    # Get the data\n    DATA_TRAIN_X_FILE = os.path.join(train_step_train_mountpoint,\
+        \ \"train_x.npy\")\n    x_train = np.load(DATA_TRAIN_X_FILE)\n\n    DATA_TRAIN_Y_FILE\
+        \ = os.path.join(train_step_train_mountpoint, \"train_y.npy\")\n    y_train\
+        \ = np.load(DATA_TRAIN_Y_FILE)\n\n    # Fit the model and return the history\
+        \ while training\n    history = model.fit(\n      x=x_train,\n      y=y_train,\n\
+        \      epochs=no_epochs,\n      batch_size=20,\n    )\n\n    DATA_VALID_X_FILE\
+        \ = os.path.join(train_step_valid_mountpoint, \"valid_x.npy\")\n    x_test\
+        \ = np.load(DATA_VALID_X_FILE)\n\n    DATA_VALID_Y_FILE = os.path.join(train_step_valid_mountpoint,\
+        \ \"valid_y.npy\")\n    y_test = np.load(DATA_VALID_Y_FILE)\n\n    # Test\
+        \ the model against the test dataset\n    # Returns the loss value & metrics\
+        \ values for the model in test mode.\n    model_loss, model_accuracy = model.evaluate(x=x_test,y=y_test)\n\
+        \n    # Confusion Matrix\n\n    # Generates output predictions for the input\
+        \ samples.\n    test_predictions = model.predict(x=x_test)\n\n    # Returns\
+        \ the indices of the maximum values along an axis.\n    test_predictions =\
+        \ np.argmax(test_predictions,axis=1) # the prediction outputs 10 values, we\
+        \ take the index number of the highest value, which is the prediction of the\
+        \ model\n\n    # Generate confusion matrix\n    confusion_matrix = tf.math.confusion_matrix(labels=y_test,predictions=test_predictions)\n\
+        \    confusion_matrix = confusion_matrix.numpy()\n    vocab = list(np.unique(y_test))\n\
+        \    data = []\n    for target_index, target_row in enumerate(confusion_matrix):\n\
+        \        for predicted_index, count in enumerate(target_row):\n          \
+        \  data.append((vocab[target_index], vocab[predicted_index], count))\n\n \
+        \   df_cm = pd.DataFrame(data, columns=['target', 'predicted', 'count'])\n\
+        \    cm_csv = df_cm.to_csv(header=False, index=False)\n\n    metadata = {\n\
+        \        \"outputs\": [\n            {\n                \"type\": \"confusion_matrix\"\
+        ,\n                \"format\": \"csv\",\n                \"schema\": [\n \
+        \                   {'name': 'target', 'type': 'CATEGORY'},\n            \
+        \        {'name': 'predicted', 'type': 'CATEGORY'},\n                    {'name':\
+        \ 'count', 'type': 'NUMBER'},\n                  ],\n                \"target_col\"\
+        \ : \"actual\",\n                \"predicted_col\" : \"predicted\",\n    \
+        \            \"source\": cm_csv,\n                \"storage\": \"inline\"\
+        ,\n                \"labels\": [0,1,2,3,4,5,6,7,8,9]\n            },\n   \
+        \         {\n                'storage': 'inline',\n                'source':\
+        \ '''# Model Overview\n## Model Summary\n\n```\n{}\n```\n\n## Model Performance\n\
+        \n**Accuracy**: {}\n**Loss**: {}\n\n'''.format(metric_model_summary,model_accuracy,model_loss),\n\
+        \                'type': 'markdown',\n            }\n        ]\n    }\n\n\
+        \    metrics = {\n      'metrics': [{\n          'name': 'model_accuracy',\n\
+        \          'numberValue':  float(model_accuracy),\n          'format' : \"\
+        PERCENTAGE\"\n        },{\n          'name': 'model_loss',\n          'numberValue':\
+        \  float(model_loss),\n          'format' : \"PERCENTAGE\"\n        }]}\n\n\
+        \    ### Save model to the storage\n    from datetime import datetime\n  \
+        \  now = datetime.now()\n    DATA_MODEL_VERSION = now.strftime(\"%Y-%m-%d-%H-%M-%S\"\
+        )\n    DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint,\
+        \ DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)\n\
+        \    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ### Save\
+        \ model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH\
+        \ = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)\
+        \ and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n\
+        \        shutil.rmtree(DATA_MODEL_V1_PATH) \n    # Recreate the version 1\
+        \ folder\n    os.makedirs(DATA_MODEL_V1_PATH, exist_ok=False)\n    keras.models.save_model(model,DATA_MODEL_V1_PATH)\n\
+        \n    print(\"Saved model to the model volume twice\")\n\n    from collections\
+        \ import namedtuple\n    output = namedtuple('output', ['mlpipeline_ui_metadata',\
+        \ 'mlpipeline_metrics'])\n    return output(json.dumps(metadata),json.dumps(metrics))\n\
+        \nimport argparse\n_parser = argparse.ArgumentParser(prog='Train step', description='')\n\
+        _parser.add_argument(\"--no-epochs\", dest=\"no_epochs\", type=int, required=False,\
+        \ default=argparse.SUPPRESS)\n_parser.add_argument(\"--optimizer\", dest=\"\
+        optimizer\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        --train-step-train-mountpoint\", dest=\"train_step_train_mountpoint\", type=str,\
+        \ required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--train-step-valid-mountpoint\"\
+        , dest=\"train_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n\
+        _parser.add_argument(\"--train-step-model-mountpoint\", dest=\"train_step_model_mountpoint\"\
+        , type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"\
+        ----output-paths\", dest=\"_output_paths\", type=str, nargs=2)\n_parsed_args\
+        \ = vars(_parser.parse_args())\n_output_files = _parsed_args.pop(\"_output_paths\"\
+        , [])\n\n_outputs = train_step(**_parsed_args)\n\n_output_serializers = [\n\
+        \    str,\n    str,\n\n]\n\nimport os\nfor idx, output_file in enumerate(_output_files):\n\
+        \    try:\n        os.makedirs(os.path.dirname(output_file))\n    except OSError:\n\
+        \        pass\n    with open(output_file, 'w') as f:\n        f.write(_output_serializers[idx](_outputs[idx]))\n"
+      image: curtisab/ndot-jupyter-scipy:v1alpha1
+      volumeMounts:
+      - {mountPath: '{{inputs.parameters.train_step_train_mountpoint}}', name: train}
+      - {mountPath: '{{inputs.parameters.train_step_valid_mountpoint}}', name: valid}
+      - {mountPath: '{{inputs.parameters.train_step_model_mountpoint}}', name: model}
+    inputs:
+      parameters:
+      - {name: clone_step_train_pvc}
+      - {name: clone_step_valid_pvc}
+      - {name: no_epochs}
+      - {name: optimizer}
+      - {name: train_step_model_mountpoint}
+      - {name: train_step_model_pvc_existing}
+      - {name: train_step_train_mountpoint}
+      - {name: train_step_valid_mountpoint}
+    outputs:
+      artifacts:
+      - {name: mlpipeline-ui-metadata, path: /tmp/outputs/mlpipeline_ui_metadata/data}
+      - {name: mlpipeline-metrics, path: /tmp/outputs/mlpipeline_metrics/data}
+    metadata:
+      labels:
+        pipelines.kubeflow.org/kfp_sdk_version: 1.8.20
+        pipelines.kubeflow.org/pipeline-sdk-type: kfp
+        pipelines.kubeflow.org/enable_caching: "true"
+      annotations: {pipelines.kubeflow.org/component_spec: '{"implementation": {"container":
+          {"args": [{"if": {"cond": {"isPresent": "no_epochs"}, "then": ["--no-epochs",
+          {"inputValue": "no_epochs"}]}}, {"if": {"cond": {"isPresent": "optimizer"},
+          "then": ["--optimizer", {"inputValue": "optimizer"}]}}, {"if": {"cond":
+          {"isPresent": "train_step_train_mountpoint"}, "then": ["--train-step-train-mountpoint",
+          {"inputValue": "train_step_train_mountpoint"}]}}, {"if": {"cond": {"isPresent":
+          "train_step_valid_mountpoint"}, "then": ["--train-step-valid-mountpoint",
+          {"inputValue": "train_step_valid_mountpoint"}]}}, {"if": {"cond": {"isPresent":
+          "train_step_model_mountpoint"}, "then": ["--train-step-model-mountpoint",
+          {"inputValue": "train_step_model_mountpoint"}]}}, "----output-paths", {"outputPath":
+          "mlpipeline_ui_metadata"}, {"outputPath": "mlpipeline_metrics"}], "command":
+          ["sh", "-c", "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet
+          --no-warn-script-location ''tensorflow==2.12.0'' || PIP_DISABLE_PIP_VERSION_CHECK=1
+          python3 -m pip install --quiet --no-warn-script-location ''tensorflow==2.12.0''
+          --user) && \"$0\" \"$@\"", "sh", "-ec", "program_path=$(mktemp)\nprintf
+          \"%s\" \"$0\" > \"$program_path\"\npython3 -u \"$program_path\" \"$@\"\n",
+          "def train_step(    \n    no_epochs = 1,   \n    optimizer = \"adam\",\n    train_step_train_mountpoint
+          = \"/mnt/train\",\n    train_step_valid_mountpoint = \"/mnt/valid\",\n    train_step_model_mountpoint
+          = \"/mnt/model\"\n):\n\n    print(\"Model Generation Step\")\n\n    \"\"\"\n    Build
+          the model with Keras API\n    Export model parameters\n    \"\"\"\n    import
+          os\n    from tensorflow import keras\n    import tensorflow as tf\n    import
+          numpy as np\n    import pandas as pd\n    import json\n\n    # Construct
+          the model structure\n\n    model = keras.models.Sequential()\n    model.add(keras.layers.Conv2D(64,
+          (3, 3), activation=''relu'', input_shape=(28,28,1)))\n    model.add(keras.layers.MaxPool2D(2,
+          2))\n\n    model.add(keras.layers.Flatten())\n    model.add(keras.layers.Dense(64,
+          activation=''relu''))\n\n    model.add(keras.layers.Dense(32, activation=''relu''))\n\n    model.add(keras.layers.Dense(10,
+          activation=''softmax'')) # Output are 10 classes, numbers from 0-9\n\n    #
+          Show model summary - how it looks\n    stringlist = []\n    model.summary(print_fn=lambda
+          x: stringlist.append(x))\n    metric_model_summary = \"\\n\".join(stringlist)\n\n    #
+          Compile the model - we want to have a binary outcome\n    model.compile(optimizer=optimizer,\n              loss=\"sparse_categorical_crossentropy\",\n              metrics=[''accuracy''])\n\n    #
+          Get the data\n    DATA_TRAIN_X_FILE = os.path.join(train_step_train_mountpoint,
+          \"train_x.npy\")\n    x_train = np.load(DATA_TRAIN_X_FILE)\n\n    DATA_TRAIN_Y_FILE
+          = os.path.join(train_step_train_mountpoint, \"train_y.npy\")\n    y_train
+          = np.load(DATA_TRAIN_Y_FILE)\n\n    # Fit the model and return the history
+          while training\n    history = model.fit(\n      x=x_train,\n      y=y_train,\n      epochs=no_epochs,\n      batch_size=20,\n    )\n\n    DATA_VALID_X_FILE
+          = os.path.join(train_step_valid_mountpoint, \"valid_x.npy\")\n    x_test
+          = np.load(DATA_VALID_X_FILE)\n\n    DATA_VALID_Y_FILE = os.path.join(train_step_valid_mountpoint,
+          \"valid_y.npy\")\n    y_test = np.load(DATA_VALID_Y_FILE)\n\n    # Test
+          the model against the test dataset\n    # Returns the loss value & metrics
+          values for the model in test mode.\n    model_loss, model_accuracy = model.evaluate(x=x_test,y=y_test)\n\n    #
+          Confusion Matrix\n\n    # Generates output predictions for the input samples.\n    test_predictions
+          = model.predict(x=x_test)\n\n    # Returns the indices of the maximum values
+          along an axis.\n    test_predictions = np.argmax(test_predictions,axis=1)
+          # the prediction outputs 10 values, we take the index number of the highest
+          value, which is the prediction of the model\n\n    # Generate confusion
+          matrix\n    confusion_matrix = tf.math.confusion_matrix(labels=y_test,predictions=test_predictions)\n    confusion_matrix
+          = confusion_matrix.numpy()\n    vocab = list(np.unique(y_test))\n    data
+          = []\n    for target_index, target_row in enumerate(confusion_matrix):\n        for
+          predicted_index, count in enumerate(target_row):\n            data.append((vocab[target_index],
+          vocab[predicted_index], count))\n\n    df_cm = pd.DataFrame(data, columns=[''target'',
+          ''predicted'', ''count''])\n    cm_csv = df_cm.to_csv(header=False, index=False)\n\n    metadata
+          = {\n        \"outputs\": [\n            {\n                \"type\": \"confusion_matrix\",\n                \"format\":
+          \"csv\",\n                \"schema\": [\n                    {''name'':
+          ''target'', ''type'': ''CATEGORY''},\n                    {''name'': ''predicted'',
+          ''type'': ''CATEGORY''},\n                    {''name'': ''count'', ''type'':
+          ''NUMBER''},\n                  ],\n                \"target_col\" : \"actual\",\n                \"predicted_col\"
+          : \"predicted\",\n                \"source\": cm_csv,\n                \"storage\":
+          \"inline\",\n                \"labels\": [0,1,2,3,4,5,6,7,8,9]\n            },\n            {\n                ''storage'':
+          ''inline'',\n                ''source'': ''''''# Model Overview\n## Model
+          Summary\n\n```\n{}\n```\n\n## Model Performance\n\n**Accuracy**: {}\n**Loss**:
+          {}\n\n''''''.format(metric_model_summary,model_accuracy,model_loss),\n                ''type'':
+          ''markdown'',\n            }\n        ]\n    }\n\n    metrics = {\n      ''metrics'':
+          [{\n          ''name'': ''model_accuracy'',\n          ''numberValue'':  float(model_accuracy),\n          ''format''
+          : \"PERCENTAGE\"\n        },{\n          ''name'': ''model_loss'',\n          ''numberValue'':  float(model_loss),\n          ''format''
+          : \"PERCENTAGE\"\n        }]}\n\n    ### Save model to the storage\n    from
+          datetime import datetime\n    now = datetime.now()\n    DATA_MODEL_VERSION
+          = now.strftime(\"%Y-%m-%d-%H-%M-%S\")\n    DATA_MODEL_VERSION_PATH = os.path.join(train_step_model_mountpoint,
+          DATA_MODEL_VERSION)\n    os.makedirs(DATA_MODEL_VERSION_PATH, exist_ok=True)\n    keras.models.save_model(model,DATA_MODEL_VERSION_PATH)\n\n    ###
+          Save model to the version 1 folder\n    import shutil\n    DATA_MODEL_V1_PATH
+          = os.path.join(train_step_model_mountpoint, \"1\")\n    if os.path.exists(DATA_MODEL_V1_PATH)
+          and os.path.isdir(DATA_MODEL_V1_PATH):\n        # Delete the old version\n        shutil.rmtree(DATA_MODEL_V1_PATH)
+          \n    # Recreate the version 1 folder\n    os.makedirs(DATA_MODEL_V1_PATH,
+          exist_ok=False)\n    keras.models.save_model(model,DATA_MODEL_V1_PATH)\n\n    print(\"Saved
+          model to the model volume twice\")\n\n    from collections import namedtuple\n    output
+          = namedtuple(''output'', [''mlpipeline_ui_metadata'', ''mlpipeline_metrics''])\n    return
+          output(json.dumps(metadata),json.dumps(metrics))\n\nimport argparse\n_parser
+          = argparse.ArgumentParser(prog=''Train step'', description='''')\n_parser.add_argument(\"--no-epochs\",
+          dest=\"no_epochs\", type=int, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--optimizer\",
+          dest=\"optimizer\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--train-step-train-mountpoint\",
+          dest=\"train_step_train_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--train-step-valid-mountpoint\",
+          dest=\"train_step_valid_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"--train-step-model-mountpoint\",
+          dest=\"train_step_model_mountpoint\", type=str, required=False, default=argparse.SUPPRESS)\n_parser.add_argument(\"----output-paths\",
+          dest=\"_output_paths\", type=str, nargs=2)\n_parsed_args = vars(_parser.parse_args())\n_output_files
+          = _parsed_args.pop(\"_output_paths\", [])\n\n_outputs = train_step(**_parsed_args)\n\n_output_serializers
+          = [\n    str,\n    str,\n\n]\n\nimport os\nfor idx, output_file in enumerate(_output_files):\n    try:\n        os.makedirs(os.path.dirname(output_file))\n    except
+          OSError:\n        pass\n    with open(output_file, ''w'') as f:\n        f.write(_output_serializers[idx](_outputs[idx]))\n"],
+          "image": "curtisab/ndot-jupyter-scipy:v1alpha1"}}, "inputs": [{"default":
+          "1", "name": "no_epochs", "optional": true, "type": "Integer"}, {"default":
+          "adam", "name": "optimizer", "optional": true, "type": "String"}, {"default":
+          "/mnt/train", "name": "train_step_train_mountpoint", "optional": true, "type":
+          "String"}, {"default": "/mnt/valid", "name": "train_step_valid_mountpoint",
+          "optional": true, "type": "String"}, {"default": "/mnt/model", "name": "train_step_model_mountpoint",
+          "optional": true, "type": "String"}], "name": "Train step", "outputs": [{"name":
+          "mlpipeline_ui_metadata", "type": "UI_metadata"}, {"name": "mlpipeline_metrics",
+          "type": "Metrics"}]}', pipelines.kubeflow.org/component_ref: '{}', pipelines.kubeflow.org/arguments.parameters: '{"no_epochs":
+          "{{inputs.parameters.no_epochs}}", "optimizer": "{{inputs.parameters.optimizer}}",
+          "train_step_model_mountpoint": "{{inputs.parameters.train_step_model_mountpoint}}",
+          "train_step_train_mountpoint": "{{inputs.parameters.train_step_train_mountpoint}}",
+          "train_step_valid_mountpoint": "{{inputs.parameters.train_step_valid_mountpoint}}"}'}
+    volumes:
+    - name: model
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.train_step_model_pvc_existing}}'}
+    - name: train
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_train_pvc}}'}
+    - name: valid
+      persistentVolumeClaim: {claimName: '{{inputs.parameters.clone_step_valid_pvc}}'}
+  arguments:
+    parameters:
+    - {name: no_epochs, value: '1'}
+    - {name: optimizer, value: adam}
+    - {name: user_namespace, value: kubeflow-user-example-com}
+    - {name: clone_step_train_pvc_existing, value: digits-train}
+    - {name: clone_step_valid_pvc_existing, value: digits-valid}
+    - {name: clone_step_train_pvc, value: digits-train-clone}
+    - {name: clone_step_valid_pvc, value: digits-valid-clone}
+    - {name: shape_step_train_mountpoint, value: /mnt/train}
+    - {name: shape_step_valid_mountpoint, value: /mnt/valid}
+    - {name: train_step_train_mountpoint, value: /mnt/train}
+    - {name: train_step_valid_mountpoint, value: /mnt/valid}
+    - {name: train_step_model_mountpoint, value: /mnt/model}
+    - {name: train_step_model_pvc_existing, value: digits-model}
+    - {name: serve_step_model_pvc_existing, value: digits-model}
+  serviceAccountName: pipeline-runner
