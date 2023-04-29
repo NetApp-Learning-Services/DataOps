@@ -271,7 +271,7 @@ def serve_step(
     name='digits-recognizer-{}'.format(v)
     kserve_version='v1beta1'
     api_version = constants.KSERVE_GROUP + '/' + kserve_version
-    pvc_path = "pvc://" + train_step_model_pvc_existing + '/1/'
+    pvc_path = "pvc://" + train_step_model_pvc_existing 
     print("Path to pvc: " + pvc_path)
 
     isvc = V1beta1InferenceService(api_version=api_version,

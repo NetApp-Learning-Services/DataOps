@@ -135,3 +135,6 @@ e. prod  - 1gi
 9. Delete the volumesnapshot and see what happens to the rest. - everything deleted because of deletionpolicy associated with volumesnapshotclass
 10. Run the notebook line that recreates the snapshot
 11. What would happen if you run this again?  Different data in volumes, different snapshots
+
+
+I had some problems getting kserve working: see this:  https://kserve.github.io/website/0.10/developer/debug/
