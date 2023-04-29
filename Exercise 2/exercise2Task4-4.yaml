@@ -132,9 +132,9 @@ spec:
   - name: dataset-snapshot
     container:
       args: ['            python3 -m pip install netapp-dataops-k8s &&             echo
-          ''dataset-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
+          ''helloworld-data-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
           create volume-snapshot --pvc-name={{inputs.parameters.dataset_volume_pvc_existing}}
-          --snapshot-name=dataset-{{workflow.uid}} --namespace={{workflow.namespace}}']
+          --snapshot-name=helloworld-data-{{workflow.uid}} --namespace={{workflow.namespace}}']
       command: [/bin/bash, -c]
       image: python:3
     inputs:
@@ -151,9 +151,9 @@ spec:
   - name: model-snapshot
     container:
       args: ['            python3 -m pip install netapp-dataops-k8s &&             echo
-          ''kfp-model-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
+          ''helloworld-model-{{workflow.uid}}'' > /volume_snapshot_name.txt &&             netapp_dataops_k8s_cli.py
           create volume-snapshot --pvc-name={{inputs.parameters.trained_model_volume_pvc_existing}}
-          --snapshot-name=kfp-model-{{workflow.uid}} --namespace={{workflow.namespace}}']
+          --snapshot-name=helloworld-model-{{workflow.uid}} --namespace={{workflow.namespace}}']
       command: [/bin/bash, -c]
       image: python:3
     inputs:
