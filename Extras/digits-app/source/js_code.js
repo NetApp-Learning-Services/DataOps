@@ -1,10 +1,10 @@
 const canvas = document.getElementById('number-drawing');
 const ctx = canvas.getContext('2d');
-const apiHost = {{APIHOST}};
-const apiUrl = {{APIURL}};
+// const apiHost = {{APIHOST}};
+// const apiUrl = {{APIURL}};
 
-console.log('apiUrl: ' + apiUrl);
-console.log('apiHost: ' + apiHost);
+// console.log('apiUrl: ' + apiUrl);
+// console.log('apiHost: ' + apiHost);
 
 let isPainting = false;
 let lineWidth = 15;
@@ -39,13 +39,16 @@ addEventListener('click', e => {
             "instances" : img_reshaped.array()
         }
 
-        console.log(img_data)
+        console.log(img_data);
+        const domain = window.location.host;
+        console.log(domain);
 
-        fetch(apiUrl, {
+
+        fetch(domain, {
             method: 'POST',
-            headers: {
-                'Host': apiHost
-            },
+            // headers: {
+            //     'Host': apiHost
+            // },
             body: JSON.stringify(img_data)
         })
         .then(response => response)
