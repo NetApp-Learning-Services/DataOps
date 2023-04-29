@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  generateName: ai-training-run-
+  generateName: helloworld-
   annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-20T20:34:00.667223',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Template for executing
       an AI training run with built-in training dataset traceability and trained model
@@ -26,9 +26,9 @@ metadata:
       "optional": true, "type": "String"}], "name": "AI Training Run"}'}
   labels: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20}
 spec:
-  entrypoint: ai-training-run
+  entrypoint: helloworld
   templates:
-  - name: ai-training-run
+  - name: helloworld
     inputs:
       parameters:
       - {name: data_prep_step_command}
