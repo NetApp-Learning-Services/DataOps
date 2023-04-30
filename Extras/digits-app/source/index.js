@@ -1,100 +1,52 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const apiUrl = process.env.API_URL;
-const apiHost = process.env.API_HOST;
+import express from 'express';
+import fetch from 'node-fetch';
+import path from 'path';
+import bodyParser from 'body-parser';
+import jp from 'jsonpath';
 
-const server = http.createServer((req, res) => {
-    if (req.method === 'GET') {
-        if (req.url === '/') {
-            fs.readFile('index.html', (err, data) => {
-                if (err) {
-                    res.writeHead(500);
-                    return res.end('Error loading index.html');
-                }
-        
-                res.writeHead(200);
-                res.end(data);
-            })
-        } else if (req.url === '/js_code.js') {
-            fs.readFile('js_code.js', 'utf8', (err, data) => {
-                if (err) {
-                    res.writeHead(500);
-                    return res.end('Error loading js_code.js');
-                }
-    
-                // const updatedHost = data.replace('{{APIHOST}}', apiHost);
-                // const updateAll = updatedHost.replace('{{APIURL}}', apiUrl);
-                // console.log('updated js_code.js');
-                // console.log(updateAll);
-        
-                res.writeHead(200, { 
-                    'Content-Type': "application/javascript"
-                });
-                res.end(data);
-            })
-        } else if (req.url === '/stylesheet.css') {
-            fs.readFile('stylesheet.css', (err, data) => {
-                if (err) {
-                    res.writeHead(500);
-                    return res.end('Error loading stylesheet.css');
-                }
-        
-                res.writeHead(200);
-                res.end(data);
-            }) 
-        } else if (req.url === '/tf.min.js') {
-                fs.readFile('tf.min.js', (err, data) => {
-                    if (err) {
-                        res.writeHead(500);
-                        return res.end('Error loading tf.min.js');
-                    }
-            
-                    res.writeHead(200);
-                    res.end(data);
-                }) 
-        } else {
-            res.writeHead(404);
-            res.end('Page not found');
+const __dirname = path.resolve(path.dirname(''));
+const app = express();
+const apiUrl = 'https://rickandmortyapi.com/api/character/2'; // process.env.API_URL;
+
+app.use(express.static('public'));
+// app.use(express.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
+app.use(bodyParser.text({ limit: '200mb' }));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/js_code.js', (req, res) => {
+    res.type("application/javascript");
+    res.sendFile(path.join(__dirname, 'js_code.js'));
+});
+
+app.get('/stylesheet.css', (req, res) => {
+    res.type('text/css');
+    res.sendFile(path.join(__dirname, 'stylesheet.css'));
+});
+
+app.post('/predict', async (req, res) => {
+    const tensor = req.body;
+    //console.log('/predict received: ' + JSON.stringify(req.body));
+    const response = await fetch(apiUrl,{
+        method: 'POST',
+        body: JSON.stringify(tensor),
+        headers: {
+            'Content-Type': 'application/json'
         }
-    } else if (req.method === 'POST') {
-        let body = '';
-        req.on('data', chunk => {
-            body += check.toString();
-        });
-        req.on('end', ()=> {
-            console.log('Received POST request with boyd: ${body}');
-            console.log('Target Url: ${apiUrl}');
-            console.log('Target Host: ${apiHost}');
-            const targetOptions = url.parse(apiUrl);
-            targetOptions.method = 'POST';
-            targetOptions.headers = {
-                'Host': apiHost,
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Content-Length': Buffer.byteLength(body),
-            };
-            const targetReq = https.request(targetOptions, targetRes => {
-                console.log(`Forwarded POST request with response: ${targetRes.statusCode}`);
-                res.writeHead(targetRes.statusCode, targetRes.headers);
-                targetRes.pipe(res);
-              });
-              targetReq.on('error', error => {
-                console.error(`Error forwarding POST request: ${error}`);
-                res.writeHead(500, {'Content-Type': 'text/plain'});
-                res.end('Error forwarding POST request');
-              });
-              targetReq.write(body);
-              targetReq.end();
-        });
-    } else {
-        res.writeHead(400, {'Content-Type': 'text/plain'})
-        res.end('Invalid request method')
-    }
-    
-});
+    });
 
-server.listen(3000, ()=> {
-    console.log('Digits server running on port 3000');
-    console.log('APIURL: ' + apiUrl);
-    console.log('APIHOST: ' + apiHost);
-});
+    const result = await response.json();
+    const value = result.predictions[0].prediction;
+    const scores = result.predictions[0].scores;
+    console.log('value: ' + value.toString());
+    console.log('scores: ' + scores.toString());
+    res.text(value);
+})
+
+app.listen(3000, () => {
+    console.log("Web server started on port 3000");
+})

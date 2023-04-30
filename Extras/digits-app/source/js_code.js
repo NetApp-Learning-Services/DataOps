@@ -1,20 +1,12 @@
 const canvas = document.getElementById('number-drawing');
 const ctx = canvas.getContext('2d');
-// const apiHost = {{APIHOST}};
-// const apiUrl = {{APIURL}};
-
-// console.log('apiUrl: ' + apiUrl);
-// console.log('apiHost: ' + apiHost);
 
 let isPainting = false;
 let lineWidth = 15;
 let startX;
 let startY;
 
-/* offset for the canvas
-height: 60px;
-margin-left:10px;
-*/
+// offset for the canvas
 let offsetY = 60;
 let offsetX = 10;
 
@@ -27,39 +19,39 @@ addEventListener('click', e => {
         console.log("clicked");
 
         // Creating new canvas, scale to 28x28px image
-        const scaled_canvas = document.createElement("canvas");
-        scaled_canvas.width = 28;
-        scaled_canvas.height = 28;
-
+        const canvas = document.getElementById('number-drawing');
+        const ctx = canvas.getContext('2d');
+        ctx.scale(28, 28);
+        const scaled_canvas = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        
         const img_tensor = tf.browser.fromPixels(scaled_canvas,2);
         const img_reshaped = img_tensor.reshape([-1,28, 28,1]);
-
-        
+    
         img_data = {
-            "instances" : img_reshaped.array()
+            "instances" : img_reshaped.arraySync()
         }
 
         console.log(img_data);
-        const domain = window.location.host;
-        console.log(domain);
 
+        const domain = window.location.origin + '/predict';
 
         fetch(domain, {
             method: 'POST',
-            // headers: {
-            //     'Host': apiHost
-            // },
-            body: JSON.stringify(img_data)
+            body: JSON.stringify(img_data),
+            headers: {
+                'Content-Type': 'application/json'
+            }
         })
         .then(response => response)
         .then(data => {
             console.log('Success:', data);
+            document.getElementById("value").textContent = "Data: " + data[0];
         })
         .catch((error) => {
             console.error('Error:', error);
         });
 
-        document.getElementById("results").innerHTML = "Example Output"; //Output still needs to be formatted!
+        document.getElementById("results").innerHTML = "Prediction Output"; 
     }
 });
 

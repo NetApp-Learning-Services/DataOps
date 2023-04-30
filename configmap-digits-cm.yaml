@@ -1,0 +1,11 @@
+apiVersion: v1
+data:
+  host: digits-recognizer-2023-04-29--17-30-14.kubeflow-user-example-com.example.com
+  url: http://digits-recognizer-2023-04-29--17-30-14.kubeflow-user-example-com.svc.cluster.local/v1/models/digits-recognizer-2023-04-29--17-30-14:predict
+kind: ConfigMap
+metadata:
+  creationTimestamp: "2023-04-30T17:11:35Z"
+  name: digits-cm
+  namespace: digits-app
+  resourceVersion: "2088764"
+  uid: 733e7af4-558e-4a8f-909e-00977fecfecd
