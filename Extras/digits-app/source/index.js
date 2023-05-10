@@ -17,19 +17,19 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get('/js_code.js', (req, res) => {
+app.get('/prediction.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, 'js_code.js'));
+    res.sendFile(path.join(__dirname, '/js/prediction.js'));
 });
 
 app.get('/chart.min.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, 'chart.min.js'));
+    res.sendFile(path.join(__dirname, '/js/chart.min.js'));
 });
 
 app.get('/tf.min.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, 'tf.min.js'));
+    res.sendFile(path.join(__dirname, '/js/tf.min.js'));
 });
 
 app.get('/stylesheet.css', (req, res) => {

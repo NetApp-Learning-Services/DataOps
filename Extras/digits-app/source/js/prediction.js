@@ -221,14 +221,11 @@ $("#predict-button").click(async function () {
 	.then(response => response.json())
 	.then(data => {
 		console.log(data);
-		// get the model's prediction results
-		//let results = Array.from(predictions);
 
 		// display the predictions in chart
 		$("#result_box").removeClass('d-none');
-		//displayChart(results);
+		displayChart(data.predictions);
 		displayLabel(data.predictions);
-		//console.log(results);
 	})
 	.catch((error) => {
 		console.error('Error:', error);
@@ -273,35 +270,20 @@ function displayChart(data) {
 
 	label = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 	if (firstTime == 0) {
-		loadChart(label, data, select_option);
+		loadChart(label, data[0], select_option);
 		firstTime = 1;
 	} else {
 		chart.destroy();
-		loadChart(label, data, select_option);
+		loadChart(label, data[0], select_option);
 	}
 	document.getElementById('chart_box').style.display = "block";
 }
-
-// function displayLabel(data) {
-// 	var max = data[0];
-//     var maxIndex = 0;
-
-//     for (var i = 1; i < data.length; i++) {
-//         if (data[i] > max) {
-//             maxIndex = i;
-//             max = data[i];
-//         }
-//     }
-// 	$(".prediction-text").html("Predicting you draw <b>"+maxIndex+"</b> with <b>"+Math.trunc( max*100 )+"%</b> confidence")
-// }
 
 function displayLabel(data) {
 	let highestValue = Number.NEGATIVE_INFINITY;
 	let highestIndex = null;
 	var arr = data[0];
-	//let predictedDigit = data.indexOf(Math.max(...data));
-	//console.log(predictedDigit);
-	//let predictedDigit = argmax(arr);
+
 	for (let i = 0; i < arr.length; i++) {
 		const value = arr[i];
 		if (value > highestValue) {
