@@ -2,14 +2,13 @@ import express from 'express';
 import fetch from 'node-fetch';
 import path from 'path';
 import bodyParser from 'body-parser';
-import jp from 'jsonpath';
 
 const __dirname = path.resolve(path.dirname(''));
 const app = express();
-const apiUrl = 'https://rickandmortyapi.com/api/character/2'; // process.env.API_URL;
+const apiUrl = process.env.API_URL;
+console.log('apiUrl: ' + apiUrl);
 
 app.use(express.static('public'));
-// app.use(express.json());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
 app.use(bodyParser.text({ limit: '200mb' }));
@@ -23,28 +22,57 @@ app.get('/js_code.js', (req, res) => {
     res.sendFile(path.join(__dirname, 'js_code.js'));
 });
 
+app.get('/chart.min.js', (req, res) => {
+    res.type("application/javascript");
+    res.sendFile(path.join(__dirname, 'chart.min.js'));
+});
+
+app.get('/tf.min.js', (req, res) => {
+    res.type("application/javascript");
+    res.sendFile(path.join(__dirname, 'tf.min.js'));
+});
+
 app.get('/stylesheet.css', (req, res) => {
     res.type('text/css');
     res.sendFile(path.join(__dirname, 'stylesheet.css'));
 });
 
-app.post('/predict', async (req, res) => {
-    const tensor = req.body;
-    //console.log('/predict received: ' + JSON.stringify(req.body));
-    const response = await fetch(apiUrl,{
-        method: 'POST',
-        body: JSON.stringify(tensor),
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
+async function getData(tensor) {
+    try {
+        const response = await fetch(apiUrl,{
+            method: 'POST',
+            body: tensor,
+            // headers: {
+            //     'Content-Type': 'application/json'
+            // }
+        });
+        const json = await response.json();
+        console.log('json: ' + json);
+        return json;
+    } catch (err) {
+        console.log(err);
+        return 'Something went wrong with the predict endpoint';
+    }
+}
 
-    const result = await response.json();
-    const value = result.predictions[0].prediction;
-    const scores = result.predictions[0].scores;
-    console.log('value: ' + value.toString());
-    console.log('scores: ' + scores.toString());
-    res.text(value);
+app.post('/predict', async (req, res) => {
+    const tensor = JSON.stringify(req.body);
+    console.log('/predict received: ' + tensor);
+    try {
+        const data = await getData(tensor);
+        console.log('json data: ' + JSON.stringify(data));
+        const predictions = data.predictions && data.predictions[0];
+        var predictedDigit = 0;
+        if (predictions) {
+            predictedDigit = predictions.indexOf(Math.max(...predictions));
+            console.log("Predicted result: ", predictedDigit);
+          }
+        res.set("Content-type", "application/json");
+        res.status(200).send(JSON.stringify(data));
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Something went wrong with the predict endpoint');
+    } 
 })
 
 app.listen(3000, () => {
