@@ -14,27 +14,27 @@ app.use(bodyParser.urlencoded({ limit: '50mb', extended: true, parameterLimit: 5
 app.use(bodyParser.text({ limit: '200mb' }));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, '/page/index.html'));
 });
 
 app.get('/prediction.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, '/js/prediction.js'));
+    res.sendFile(path.join(__dirname, '/page/prediction.js'));
 });
 
 app.get('/chart.min.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, '/js/chart.min.js'));
+    res.sendFile(path.join(__dirname, '/page/chart.min.js'));
 });
 
 app.get('/tf.min.js', (req, res) => {
     res.type("application/javascript");
-    res.sendFile(path.join(__dirname, '/js/tf.min.js'));
+    res.sendFile(path.join(__dirname, '/page/tf.min.js'));
 });
 
 app.get('/stylesheet.css', (req, res) => {
     res.type('text/css');
-    res.sendFile(path.join(__dirname, 'stylesheet.css'));
+    res.sendFile(path.join(__dirname, '/page/stylesheet.css'));
 });
 
 async function getData(tensor) {
@@ -42,9 +42,6 @@ async function getData(tensor) {
         const response = await fetch(apiUrl,{
             method: 'POST',
             body: tensor,
-            // headers: {
-            //     'Content-Type': 'application/json'
-            // }
         });
         const json = await response.json();
         console.log('json: ' + json);
