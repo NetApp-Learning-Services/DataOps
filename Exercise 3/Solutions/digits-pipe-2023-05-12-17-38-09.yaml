@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
   generateName: digits-recognizer-pipeline-
-  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-04-29T17:23:12.943072',
+  annotations: {pipelines.kubeflow.org/kfp_sdk_version: 1.8.20, pipelines.kubeflow.org/pipeline_compilation_time: '2023-05-12T17:38:09.838882',
     pipelines.kubeflow.org/pipeline_spec: '{"description": "Detect digits", "inputs":
       [{"default": "1", "name": "no_epochs", "optional": true, "type": "Integer"},
       {"default": "adam", "name": "optimizer", "optional": true}, {"default": "kubeflow-user-example-com",
@@ -201,11 +201,11 @@ spec:
         \ import V1beta1InferenceServiceSpec\n    from kserve import V1beta1PredictorSpec\n\
         \    from kserve import V1beta1TFServingSpec\n    from datetime import datetime\n\
         \n    print(\"Model Serve Step\")\n\n    namespace = user_namespace\n\n  \
-        \  now = datetime.now()\n    v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n\
-        \    name='digits-recognizer-{}'.format(v)\n    kserve_version='v1beta1'\n\
-        \    api_version = constants.KSERVE_GROUP + '/' + kserve_version\n    pvc_path\
-        \ = \"pvc://\" + train_step_model_pvc_existing + '/1/'\n    print(\"Path to\
-        \ pvc: \" + pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n\
+        \  # now = datetime.now()\n    # v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\
+        \    #name='digits-recognizer-{}'.format(v)\n    name='digits-recognizer'\n\
+        \    kserve_version='v1beta1'\n    api_version = constants.KSERVE_GROUP +\
+        \ '/' + kserve_version\n    pvc_path = \"pvc://\" + train_step_model_pvc_existing\
+        \ \n    print(\"Path to pvc: \" + pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n\
         \                                   kind=constants.KSERVE_KIND,\n        \
         \                           metadata=client.V1ObjectMeta(\n              \
         \                         name=name, namespace=namespace, annotations={'sidecar.istio.io/inject':'false'}),\n\
@@ -247,10 +247,10 @@ spec:
           V1beta1InferenceService\n    from kserve import V1beta1InferenceServiceSpec\n    from
           kserve import V1beta1PredictorSpec\n    from kserve import V1beta1TFServingSpec\n    from
           datetime import datetime\n\n    print(\"Model Serve Step\")\n\n    namespace
-          = user_namespace\n\n    now = datetime.now()\n    v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n\n    name=''digits-recognizer-{}''.format(v)\n    kserve_version=''v1beta1''\n    api_version
+          = user_namespace\n\n    # now = datetime.now()\n    # v = now.strftime(\"%Y-%m-%d--%H-%M-%S\")\n    #name=''digits-recognizer-{}''.format(v)\n    name=''digits-recognizer''\n    kserve_version=''v1beta1''\n    api_version
           = constants.KSERVE_GROUP + ''/'' + kserve_version\n    pvc_path = \"pvc://\"
-          + train_step_model_pvc_existing + ''/1/''\n    print(\"Path to pvc: \" +
-          pvc_path)\n\n    isvc = V1beta1InferenceService(api_version=api_version,\n                                   kind=constants.KSERVE_KIND,\n                                   metadata=client.V1ObjectMeta(\n                                       name=name,
+          + train_step_model_pvc_existing \n    print(\"Path to pvc: \" + pvc_path)\n\n    isvc
+          = V1beta1InferenceService(api_version=api_version,\n                                   kind=constants.KSERVE_KIND,\n                                   metadata=client.V1ObjectMeta(\n                                       name=name,
           namespace=namespace, annotations={''sidecar.istio.io/inject'':''false''}),\n                                   spec=V1beta1InferenceServiceSpec(\n                                   predictor=V1beta1PredictorSpec(\n                                       tensorflow=(V1beta1TFServingSpec(\n                                           storage_uri=pvc_path))))\n    )\n\n    KServe
           = KServeClient()\n    KServe.create(isvc)\n\nimport argparse\n_parser =
           argparse.ArgumentParser(prog=''Serve step'', description=''Create kserve
