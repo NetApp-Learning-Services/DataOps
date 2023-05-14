@@ -905,7 +905,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: curtisab/gateway:v1alpha2
+        image: curtisab/gateway:v1alpha3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
