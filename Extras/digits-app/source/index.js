@@ -17,6 +17,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/page/index.html'));
 });
 
+app.get('/jquery-3-3-1.min.js', (req, res) => {
+    res.type("application/javascript");
+    res.sendFile(path.join(__dirname, '/page/jquery-3-3-1.min.js'));
+});
+
 app.get('/prediction.js', (req, res) => {
     res.type("application/javascript");
     res.sendFile(path.join(__dirname, '/page/prediction.js'));
