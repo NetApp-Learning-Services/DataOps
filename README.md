@@ -1,5 +1,6 @@
 # Scaling DataOps using NetApp AI Control Plane
-Version 1.0 (November 2023) STRSW-WKS-DTOPS
+Version 1.0 (November 2023) <br />
+STRSW-WKS-DTOPS <br />
 Kubernetes v1.23 <br />
 WeaveNet 2.8.1 <br />
 Docker 20.10.12 <br />
