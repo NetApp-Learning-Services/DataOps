@@ -136,7 +136,7 @@ spec:
           create volume-snapshot --pvc-name={{inputs.parameters.dataset_volume_pvc_existing}}
           --snapshot-name=helloworld-data-{{workflow.uid}} --namespace={{workflow.namespace}}']
       command: [/bin/bash, -c]
-      image: python:3
+      image: python:3.9
     inputs:
       parameters:
       - {name: dataset_volume_pvc_existing}
@@ -155,7 +155,7 @@ spec:
           create volume-snapshot --pvc-name={{inputs.parameters.trained_model_volume_pvc_existing}}
           --snapshot-name=helloworld-model-{{workflow.uid}} --namespace={{workflow.namespace}}']
       command: [/bin/bash, -c]
-      image: python:3
+      image: python:3.9
     inputs:
       parameters:
       - {name: trained_model_volume_pvc_existing}
