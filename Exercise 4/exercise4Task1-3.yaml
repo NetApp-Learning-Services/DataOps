@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: chatter-chroma-app
+  name: chatter-chroma-srv
+  namespace: chatter-app
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: chatter-chroma-app
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: chatter-chroma-app
+  name: chatter-chroma-ss
+  namespace: chatter-app
+spec:
+  serviceName: 'chatter-chroma-srv'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatter-chroma-app
+  template:
+    metadata:
+      labels:
+        app: chatter-chroma-app
+    spec:
+      containers:
+      - image: curtisab/chatter-chroma:0.5.1.dev84
+        name: chatter-chroma-app
+        resources: {}
