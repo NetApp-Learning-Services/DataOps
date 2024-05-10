@@ -36,4 +36,10 @@ spec:
       containers:
       - image: curtisab/chatter-ollama:0.1.34
         name: chatter-ollama-app
-        resources: {}
+        resources: 
+          requests: 
+            cpu: "2"
+            memory: "18GB"
+          limits: 
+            cpu: "2"
+            memory: "18GB"

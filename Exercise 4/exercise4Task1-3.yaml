@@ -36,4 +36,10 @@ spec:
       containers:
       - image: curtisab/chatter-chroma:0.5.1.dev84
         name: chatter-chroma-app
-        resources: {}
+        resources: 
+          requests: 
+            cpu: "1"
+            memory: "10GB"
+          limits: 
+            cpu: "2"
+            memory: "10GB"

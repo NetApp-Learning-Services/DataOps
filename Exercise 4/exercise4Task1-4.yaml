@@ -63,7 +63,13 @@ spec:
       containers:
       - image: curtisab/chatter-backend:0.1
         name: chatter-backend-app
-        resources: {}
+        resources: 
+          requests: 
+            cpu: "1"
+            memory: "4GB"
+          limits: 
+            cpu: "2"
+            memory: "4GB"
         env:
         - name: SOURCES_DIRECTORY
           valueFrom:

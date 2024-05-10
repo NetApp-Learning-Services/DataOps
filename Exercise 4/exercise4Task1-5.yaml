@@ -44,7 +44,13 @@ spec:
       containers:
       - image: curtisab/chatter-frontend:0.1
         name: chatter-frontend-app
-        resources: {}
+        resources: 
+          requests: 
+            cpu: "1"
+            memory: "2GB"
+          limits: 
+            cpu: "1"
+            memory: "2GB"
         env:
         - name: SERVER_URL
           valueFrom:
