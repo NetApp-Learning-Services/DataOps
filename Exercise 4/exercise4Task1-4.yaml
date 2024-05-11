@@ -66,10 +66,10 @@ spec:
         resources: 
           requests: 
             cpu: "1"
-            memory: "4GB"
+            memory: "4G"
           limits: 
             cpu: "2"
-            memory: "4GB"
+            memory: "4G"
         env:
         - name: SOURCES_DIRECTORY
           valueFrom:
