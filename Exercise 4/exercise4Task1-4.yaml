@@ -8,7 +8,7 @@ data:
   sources_minimum_size: "3"
   models_directory: models
   model_server: ollama
-  llm_server_url: http://chatter-ollama.chatter-app.svc.cluster.local:11434
+  llm_server_url: http://chatter-ollama-srv.chatter-app.svc.cluster.local:11434
   llm_name: llama3:8b
   llm_family: llama
   llm_parameter_size: 8b
@@ -17,7 +17,7 @@ data:
   llm_temperature: "0.8"
   llm_top_p: "0.9"
   llm_top_k: "40"
-  embeddings_server_url: http://chatter-chroma.chatter-app.svc.cluster.local:8000
+  embeddings_server_url: http://chatter-chroma-srv.chatter-app.svc.cluster.local:8000
   embeddings_collection: sources
   embeddings_name: all-MiniLM-L6-v2
   embeddings_chunk_size: "1000"

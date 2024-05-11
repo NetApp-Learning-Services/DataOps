@@ -4,7 +4,7 @@ metadata:
   name: chatter-frontend-cm
   namespace: chatter-app
 data:
-  url: http://chatter-backend.chatter-app.svc.cluster.local:5000
+  url: http://chatter-backend-srv.chatter-app.svc.cluster.local:5000
 ---
 apiVersion: v1
 kind: Service
