@@ -15,6 +15,19 @@ spec:
     app: chatter-chroma-app
   type: ClusterIP
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatter-pvc-chroma
+  namespace: chatter-app
+spec:
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: c1-svmai-nas-basic
+  accessModes:
+    - ReadWriteOnce
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -36,6 +49,9 @@ spec:
       containers:
       - image: curtisab/chatter-chroma:0.5.1.dev84
         name: chatter-chroma-app
+        volumeMounts:
+        - mountPath: /chroma/chroma
+          name: chroma-pvc
         resources: 
           requests: 
             cpu: "1"
@@ -43,3 +59,7 @@ spec:
           limits: 
             cpu: "2"
             memory: 10G
+      volumes:
+      - name: chroma-pvc
+        persistentVolumeClaim: 
+          claimName: chatter-pvc-chroma

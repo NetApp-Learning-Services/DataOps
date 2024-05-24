@@ -47,10 +47,10 @@ spec:
         resources: 
           requests: 
             cpu: "1"
-            memory: "2G"
+            memory: "4G"
           limits: 
-            cpu: "1"
-            memory: "2G"
+            cpu: "2"
+            memory: "8G"
         env:
         - name: SERVER_URL
           valueFrom:

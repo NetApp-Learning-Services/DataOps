@@ -11,7 +11,7 @@ data:
   llm_server_url: http://chatter-ollama-srv.chatter-app.svc.cluster.local:11434
   llm_name: llama3:8b
   llm_family: llama
-  llm_parameter_size: 8b
+  llm_parameter_size: 8.0B
   llm_n_ctx: "1000"
   llm_n_batch: "8"
   llm_temperature: "0.8"
@@ -42,6 +42,19 @@ spec:
     app: chatter-backend-app
   type: ClusterIP
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatter-pvc-backend
+  namespace: chatter-app
+spec:
+  resources:
+    requests:
+      storage: 6Gi
+  storageClassName: c1-svmai-nas-basic
+  accessModes:
+    - ReadWriteOnce
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -63,15 +76,18 @@ spec:
       containers:
       - image: curtisab/chatter-backend:0.1
         name: chatter-backend-app
+        volumeMounts:
+        - mountPath: /app/sources
+          name: backend-pvc
         ports:
           - containerPort: 5000
         resources: 
           requests: 
-            cpu: "1"
-            memory: "4G"
+            cpu: "2"
+            memory: "8G"
           limits: 
             cpu: "2"
-            memory: "4G"
+            memory: "16G"
         env:
         - name: SOURCES_DIRECTORY
           valueFrom:
@@ -168,3 +184,17 @@ spec:
             configMapKeyRef:
               name: chatter-backend-cm
               key: embeddings_download_url
+      volumes:
+      - name: backend-pvc
+        persistentVolumeClaim: 
+          claimName: chatter-pvc-backend
+      hostAliases:
+      - ip: 108.138.246.71
+        hostnames:
+        - "huggingface.co" 
+      - ip: 18.238.192.50
+        hostnames:
+        - "cdn-lfs.huggingface.co"
+      - ip: 18.155.192.75
+        hostnames:
+        - "cdn-lfs-us-1.huggingface.co"
