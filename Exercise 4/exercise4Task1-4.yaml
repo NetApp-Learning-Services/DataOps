@@ -32,8 +32,6 @@ metadata:
     app: chatter-backend-app
   name: chatter-backend-srv
   namespace: chatter-app
-  annotations:
-    metallb.universe.tf/loadBalancerIPs: 192.168.0.249
 spec:
   ports:
   - name: http
@@ -42,7 +40,7 @@ spec:
     protocol: TCP
   selector:
     app: chatter-backend-app
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: StatefulSet
