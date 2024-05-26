@@ -25,6 +25,8 @@ data:
   embeddings_chunk_overlap: "100"
   embeddings_top_k: "4"
   embeddings_download_url: https://public.ukp.informatik.tu-darmstadt.de/reimers/sentence-transformers/v0.2/all-MiniLM-L6-v2.zip
+  pythonunbuffered: "1"
+  flask_debug: "0"
 ---
 apiVersion: v1
 kind: Service
@@ -75,7 +77,7 @@ spec:
         app: chatter-backend-app
     spec:
       containers:
-      - image: curtisab/chatter-backend:0.2
+      - image: curtisab/chatter-backend:0.3
         name: chatter-backend-app
         volumeMounts:
         - mountPath: /app/sources
@@ -190,6 +192,16 @@ spec:
             configMapKeyRef:
               name: chatter-backend-cm
               key: embeddings_download_url
+        - name: PYTHONUNBUFFERED
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: pythonunbuffered
+        - name: FLASK_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: flask_debug
       volumes:
       - name: backend-pvc
         persistentVolumeClaim: 
