@@ -20,6 +20,7 @@ data:
   embeddings_server_url: http://chatter-chroma-srv.chatter-app.svc.cluster.local:8000
   embeddings_collection: sources
   embeddings_name: all-MiniLM-L6-v2
+  embeddings_subpath: onnx
   embeddings_chunk_size: "1000"
   embeddings_chunk_overlap: "100"
   embeddings_top_k: "4"
@@ -164,6 +165,11 @@ spec:
             configMapKeyRef:
               name: chatter-backend-cm
               key: embeddings_name
+        - name: EMBEDDINGS_SUBPATH
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_subpath
         - name: EMBEDDINGS_CHUNK_SIZE
           valueFrom:
             configMapKeyRef:
