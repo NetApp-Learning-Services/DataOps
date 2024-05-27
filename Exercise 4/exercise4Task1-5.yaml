@@ -46,8 +46,8 @@ spec:
         name: chatter-frontend-app
         resources: 
           requests: 
-            cpu: "1"
-            memory: "4G"
+            cpu: "2"
+            memory: "6G"
           limits: 
             cpu: "2"
             memory: "8G"

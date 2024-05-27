@@ -54,10 +54,10 @@ spec:
           name: ollama-pvc
         resources: 
           requests: 
-            cpu: "2"
+            cpu: "3"
             memory: 18G
           limits: 
-            cpu: "2"
+            cpu: "4"
             memory: 18G
       volumes:
       - name: ollama-pvc
