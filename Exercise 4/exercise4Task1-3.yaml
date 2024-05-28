@@ -31,8 +31,8 @@ metadata:
 spec:
   resources:
     requests:
-      storage: 10Gi
-  storageClassName: c1-svmai-nas-basic
+      storage: CHANGE_ME
+  storageClassName: CHANGE_ME
   accessModes:
     - ReadWriteOnce
 ---
@@ -76,4 +76,4 @@ spec:
       volumes:
       - name: chroma-pvc
         persistentVolumeClaim: 
-          claimName: chatter-pvc-chroma
+          claimName: CHANGE_ME

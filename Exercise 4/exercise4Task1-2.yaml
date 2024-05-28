@@ -23,8 +23,8 @@ metadata:
 spec:
   resources:
     requests:
-      storage: 8Gi
-  storageClassName: c1-svmai-nas-basic
+      storage: CHANGE_ME
+  storageClassName: CHANGE_ME
   accessModes:
     - ReadWriteOnce
 ---
@@ -62,4 +62,4 @@ spec:
       volumes:
       - name: ollama-pvc
         persistentVolumeClaim: 
-          claimName: chatter-pvc-ollama
+          claimName: CHANGE_ME

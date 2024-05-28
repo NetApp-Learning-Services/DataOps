@@ -53,8 +53,8 @@ metadata:
 spec:
   resources:
     requests:
-      storage: 6Gi
-  storageClassName: c1-svmai-nas-basic
+      storage: CHANGE_ME
+  storageClassName: CHANGE_ME
   accessModes:
     - ReadWriteOnce
 ---
@@ -205,7 +205,7 @@ spec:
       volumes:
       - name: backend-pvc
         persistentVolumeClaim: 
-          claimName: chatter-pvc-backend
+          claimName: CHANGE_ME
       hostAliases:
       - ip: 108.138.246.71
         hostnames:
