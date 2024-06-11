@@ -1,4 +1,4 @@
-# Scaling DataOps using NetApp AI Control Plane
+# Scaling DataOps with NetApp AI Control Plane
 Version 0.0 (Workshop) (November 2023) <br />
 STRSW-WKS-DTOPS <br />
 Kubernetes v1.23 <br />
