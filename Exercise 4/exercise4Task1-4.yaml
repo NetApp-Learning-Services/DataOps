@@ -77,7 +77,7 @@ spec:
         app: chatter-backend-app
     spec:
       containers:
-      - image: curtisab/chatter-backend:0.3
+      - image: curtisab/chatter-backend:0.4
         name: chatter-backend-app
         volumeMounts:
         - mountPath: /app/sources

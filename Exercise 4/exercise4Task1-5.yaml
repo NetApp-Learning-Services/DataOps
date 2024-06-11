@@ -42,7 +42,7 @@ spec:
         app: chatter-frontend-app
     spec:
       containers:
-      - image: curtisab/chatter-frontend:0.5
+      - image: curtisab/chatter-frontend:0.6
         name: chatter-frontend-app
         resources: 
           requests: 
