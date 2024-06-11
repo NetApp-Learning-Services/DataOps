@@ -1,4 +1,4 @@
-# Scaling DataOps using NetApp AI Control Plane
+# Scaling DataOps with NetApp AI Control Plane
 Version 2.0 (April 2024) <br />
 Kubernetes v1.29 <br />
 CNI: Weave <br />
