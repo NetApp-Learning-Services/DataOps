@@ -1,0 +1,38 @@
+.bot-msg{
+    background-color: #dfdfdf !important ;
+    color: #000000;
+    border-radius: 15px;
+  }
+
+  .user-msg {
+    background-color: #f1f1f1 ;
+    color: #000000;
+    border-radius: 15px;
+  }
+
+  @media screen and (max-width: 980px) {
+    .chat-scroll{
+      height: 90vh;
+    }
+  }
+
+  .blinking-cursor {
+    -webkit-animation: 0.4s blink step-end infinite;
+    -moz-animation: 0.4s blink step-end infinite;
+    animation: 0.4s blink step-end infinite;
+  }
+
+  .chat-scroll{
+    overflow-y: scroll;
+    scrollbar-width: thin;
+    height: 88vh;
+  }
+  .chat-scroll::-webkit-scrollbar {
+    width: 1rem;
+  }
+  
+  .main-chat-col {
+   background-color: #fafafa;
+   border-radius: 12px;
+   height:100% !important;
+  }
