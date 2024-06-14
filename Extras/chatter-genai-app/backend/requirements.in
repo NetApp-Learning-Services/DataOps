@@ -1,0 +1,11 @@
+Flask==3.0.3
+Flask-Cors==4.0.1
+requests==2.31.0 
+langchain==0.1.19
+langchain-community==0.0.38
+langchain-chroma==0.1.0 #required for chroma as the vector database
+python-dotenv==1.0.1 #used to load variables from .env file or environment variables
+tqdm==4.66.4 #required for langchain  
+#sentence-transformers==2.7.0 #required for chromadb default embeddings
+#fastembed==0.2.7 #required for fasttext embeddings
+ollama==0.1.9 #required for ollama api calls
