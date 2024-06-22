@@ -1,0 +1,33 @@
+Input,Output
+High-performance storage solution,AFF A-Series
+Commodity flash storage solution,AFF C-Series
+Cloud-based storage,Cloud Volumes ONTAP
+Converged infrastructure,FlexPod
+Data protection and recovery management tool,SnapCenter
+object storage,StorageGRID
+Python SDK for AI,DataOps Toolkit
+Storage as a managed service,Keystone
+Managed Kubernetes service,Astra
+AWS high performance storage service,AWS FSx for NetApp ONTAP
+Azure high performance storage service,Azure NetApp Files
+Google Cloud high-performance storage service,Google Cloud NetApp Volumes
+Feature-rich SAN storage management software,ONTAP
+High performance SAN storage management software,SANtricity
+AI inferencing storage,AIPod
+Metadata-backed storage,StorageGRID
+Hybrid storage platform,ONTAP
+Managed Kafka service,Instacluster
+Flexible cloud storage consumption,Keystone
+Managed OpenSearch service,Instacluster
+Managed PostgreSQL serice,Instacluster
+Managed Apache Cassandra service,Instacluster
+Kubernetes data management platform,Astra
+Compliance and data retention solution,SnapLock
+Single pane of glass storage management interface,BlueXP
+backup management solution,SnapCenter
+cloud-based backup management solution,BlueXP backup and recovery
+Disk storage array,E-Series
+High performance flash array,EF-Series
+Disk general purpose storage,FAS
+Symmetric SAN,All-flash SAN Array
+AI language model training,NetApp SuperPod
