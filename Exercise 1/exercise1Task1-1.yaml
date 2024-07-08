@@ -180,6 +180,12 @@ rules:
 - apiGroups:
   - snapshot.storage.k8s.io
   resources:
+  - volumesnapshotclasses
+  verbs:
+  - create
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
   - volumesnapshots/status
   - volumesnapshotcontents/status
   verbs:
@@ -261,6 +267,8 @@ rules:
   - tridentprovisioners/status
   - tridentorchestrators
   - tridentorchestrators/status
+  - tridentconfigurators
+  - tridentconfigurators/status
   verbs:
   - get
   - list
@@ -498,7 +506,14 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: trident-operator
-        image: netapp/trident-operator:24.02.0
+        image: netapp/trident-operator:24.06.0
         imagePullPolicy: IfNotPresent
         name: trident-operator
+        resources:
+          limits:
+            cpu: 20m
+            memory: 80Mi
+          requests:
+            cpu: 10m
+            memory: 40Mi
       serviceAccountName: trident-operator
