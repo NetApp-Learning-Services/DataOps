@@ -23,6 +23,11 @@ spec:
   svm: svmai
   credentials:
     name: c1-svmai-backend-secret
+  storage:
+  - defaults:
+      nameTemplate: '{{.labels.cluster}}_{{.volume.Namespace}}_{{.volume.RequestName}}_{{ .config.BackendName }}'
+    labels:
+      cluster: Cluster1
 ---
 apiVersion: trident.netapp.io/v1
 kind: TridentBackendConfig
