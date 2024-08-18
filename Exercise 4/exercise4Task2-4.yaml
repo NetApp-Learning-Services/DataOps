@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatter-backend-cm
+  namespace: chatter-app
+data:
+  sources_directory: sources
+  sources_minimum_size: "3"
+  models_directory: models
+  model_server: ollama
+  llm_server_url: http://chatter-ollama-srv.chatter-app.svc.cluster.local:11434
+  llm_name: llama3:8b
+  llm_family: llama
+  llm_parameter_size: 8.0B
+  llm_n_ctx: "1000"
+  llm_n_batch: "8"
+  llm_temperature: "0.8"
+  llm_top_p: "0.9"
+  llm_top_k: "40"
+  embeddings_server_url: http://chatter-chroma-srv.chatter-app.svc.cluster.local:8000
+  embeddings_collection: sources
+  embeddings_name: all-MiniLM-L6-v2
+  embeddings_subpath: onnx
+  embeddings_chunk_size: "1000"
+  embeddings_chunk_overlap: "100"
+  embeddings_top_k: "4"
+  embeddings_download_url: https://public.ukp.informatik.tu-darmstadt.de/reimers/sentence-transformers/v0.2/all-MiniLM-L6-v2.zip
+  pythonunbuffered: "1"
+  flask_debug: "0"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: chatter-backend-app
+  name: chatter-backend-srv
+  namespace: chatter-app
+spec:
+  ports:
+  - name: http
+    port: 5000
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    app: chatter-backend-app
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatter-pvc-backend
+  namespace: chatter-app
+spec:
+  resources:
+    requests:
+      storage: CHANGE_ME
+  storageClassName: CHANGE_ME
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: chatter-backend-app
+  name: chatter-backend-ss
+  namespace: chatter-app
+spec:
+  serviceName: 'chatter-backend-srv'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatter-backend-app
+  template:
+    metadata:
+      labels:
+        app: chatter-backend-app
+    spec:
+      containers:
+      - image: curtisab/chatter-backend:0.4
+        name: chatter-backend-app
+        volumeMounts:
+        - mountPath: /app/sources
+          name: backend-pvc
+        ports:
+          - containerPort: 5000
+        resources: 
+          requests: 
+            cpu: "2"
+            memory: "12G"
+          limits: 
+            cpu: "2"
+            memory: "16G"
+        env:
+        - name: SOURCES_DIRECTORY
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: sources_directory
+        - name: SOURCES_MINIMUM_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: sources_minimum_size
+        - name: MODELS_DIRECTORY
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: models_directory
+        - name: LLM_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_server_url
+        - name: LLM_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_name
+        - name: LLM_FAMILY
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_family
+        - name: LLM_PARAMETER_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_parameter_size
+        - name: LLM_N_CTX
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_n_ctx
+        - name: LLM_N_BATCH
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_n_batch
+        - name: LLM_TEMPERATURE
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_temperature
+        - name: LLM_TOP_P
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_top_p
+        - name: LLM_TOP_K
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: llm_top_k
+        - name: EMBEDDINGS_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_server_url
+        - name: EMBEDDINGS_COLLECTION
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_collection
+        - name: EMBEDDINGS_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_name
+        - name: EMBEDDINGS_SUBPATH
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_subpath
+        - name: EMBEDDINGS_CHUNK_SIZE
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_chunk_size
+        - name: EMBEDDINGS_CHUNK_OVERLAP
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_chunk_overlap
+        - name: EMBEDDINGS_TOP_K
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_top_k
+        - name: EMBEDDINGS_DOWNLOAD_URL
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: embeddings_download_url
+        - name: PYTHONUNBUFFERED
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: pythonunbuffered
+        - name: FLASK_DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-backend-cm
+              key: flask_debug
+      volumes:
+      - name: backend-pvc
+        persistentVolumeClaim: 
+          claimName: CHANGE_ME
+      hostAliases:
+      - ip: 108.138.246.71
+        hostnames:
+        - "huggingface.co" 
+      - ip: 18.238.192.50
+        hostnames:
+        - "cdn-lfs.huggingface.co"
+      - ip: 18.155.192.75
+        hostnames:
+        - "cdn-lfs-us-1.huggingface.co"

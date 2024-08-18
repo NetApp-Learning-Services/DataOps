@@ -1,0 +1,34 @@
+0. Setup nodejs
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install 20
+node -v
+npm install
+
+1. How to add docker to Linux:
+sudo apt update
+sudo apt install docker.io
+sudo usermod -aG docker $USER
+newgrp docker
+
+2. Building:
+docker build --tag curtisab/chatter-frontend:0.6 .
+
+3. Running a test:
+docker run -p 3000:3000 -e SERVER_URL=http://192.168.0.62:5000 --name frontend curtisab/chatter-frontend:0.6
+
+4. Delete an image:
+docker image rm curtisab/chatter-frontend:0.6 -f
+
+5. Push image:
+docker login
+docker push curtisab/chatter-frontend:0.6
+
+6. Getting Ollama
+docker pull ollama/ollama:0.1.34
+docker tag ollama/ollama:0.1.34 curtisab/chatter-ollama:0.1.34
+docker push curtisab/chatter-ollama:0.1.34
+
+7. Getting chroma
+docker pull chromadb/chroma:0.5.1.dev84
+docker tag chromadb/chroma:0.5.1.dev84 curtisab/chatter-chroma:0.5.1.dev84
+docker push curtisab/chatter-chroma:0.5.1.dev84

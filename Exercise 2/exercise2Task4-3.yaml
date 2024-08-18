@@ -7,7 +7,7 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: c2-svmai-nas-basic
+  storageClassName: c1-svmai-nas-basic
   accessModes:
     - ReadWriteMany
 ---
@@ -20,6 +20,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: c2-svmai-nas-basic
+  storageClassName: c1-svmai-nas-basic
   accessModes:
     - ReadWriteMany

@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chatter-chroma-cm
+  namespace: chatter-app
+data:
+  allow_reset: "TRUE"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: chatter-chroma-app
+  name: chatter-chroma-srv
+  namespace: chatter-app
+spec:
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: chatter-chroma-app
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatter-pvc-chroma
+  namespace: chatter-app
+spec:
+  resources:
+    requests:
+      storage: CHANGE_ME
+  storageClassName: CHANGE_ME
+  accessModes:
+    - ReadWriteOnce
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: chatter-chroma-app
+  name: chatter-chroma-ss
+  namespace: chatter-app
+spec:
+  serviceName: 'chatter-chroma-srv'
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chatter-chroma-app
+  template:
+    metadata:
+      labels:
+        app: chatter-chroma-app
+    spec:
+      containers:
+      - image: curtisab/chatter-chroma:0.5.1.dev84
+        name: chatter-chroma-app
+        volumeMounts:
+        - mountPath: /chroma/chroma
+          name: chroma-pvc
+        resources: 
+          requests: 
+            cpu: "1"
+            memory: 8G
+          limits: 
+            cpu: "2"
+            memory: 10G
+        env:
+        - name: ALLOW_RESET
+          valueFrom:
+            configMapKeyRef:
+              name: chatter-chroma-cm
+              key: allow_reset
+      volumes:
+      - name: chroma-pvc
+        persistentVolumeClaim: 
+          claimName: CHANGE_ME

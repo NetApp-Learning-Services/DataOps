@@ -1,0 +1,92 @@
+Setup Python under server:
+0. sudo  apt-get install python3-venv
+1. cd server
+2. python3 -m venv .venv
+3. source .venv/bin/activate
+4. pip install -r requirements.txt --no-cache-dir
+
+To uninstall all pip packages:
+pip freeze | xargs pip uninstall -y
+
+To resolve pip dependency issues:
+1. python -m pip install pip-tools --no-cache-dir
+2. Added packages to requirements.in
+3. pip-compile requirements.in
+4. pip cache purge
+5. pip install -r requirements.txt --no-cache-dir
+
+Setting up Node.js
+1. curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+2. open new terminal
+3. nvm install 18
+
+Setup next:
+1. npm install next@latest
+
+Running the client:
+1. cd privatechatdocs/client
+2. npm install
+3. npm run dev
+
+Running the server:
+1. python3 main.py
+
+I got an error regarding sqlite3 being out of date for Chroma:
+Added pysqlite3-binary to requirements.in file
+Added the following to _ingest.py:
+    import pysqlite3
+    sys.modules["sqlite3"] = sys.modules.pop("pysqlite3")
+See this for other solutions: https://stackoverflow.com/questions/76958817/streamlit-your-system-has-an-unsupported-version-of-sqlite3-chroma-requires-sq
+
+
+I kept getting an error that some dns location where not known
+Probably a problem with the LOD kit
+Add these to /etc/hosts:
+
+108.138.246.71  huggingface.co
+18.238.192.50   cdn-lfs.huggingface.co
+18.155.192.75   cdn-lfs-us-1.huggingface.co
+
+Another error using GPT4ALL:
+OSError: /lib/x86_64-linux-gnu/libc.so.6: version `GLIBC_2.32' not found (required by /home/user/repos/privatechatdocs/server/.venv/lib/python3.8/site-packages/gpt4all/llmodel_DO_NOT_MODIFY/build/libllmodel.so)
+See this for possible fix: https://github.com/nomic-ai/gpt4all/issues/385
+
+For Ollama:
+see this: https://github.com/ollama/ollama/blob/main/docs/faq.md#how-do-i-configure-ollama-server
+ollama pull llama3:8b
+
+
+How to add docker to Linux:
+
+sudo apt update
+sudo apt install docker.io
+sudo usermod -aG docker $USER
+newgrp docker
+
+Get Ollama:
+
+docker pull ollama/ollama:0.1.34 or docker pull curtisab/chatter-ollama:0.1.34
+mkdir models
+OLLAMA_HOST=0.0.0.0:11434 docker run -d -v models:/root/.ollama -p 11434:11434 --name ollama ollama/ollama:0.1.34 or 
+OLLAMA_HOST=0.0.0.0:11434 docker run -d -v models:/root/.ollama -p 11434:11434 --name ollama curtisab/chatter-ollama:0.1.34 
+docker logs
+docker exec -it ollama sh 
+ollama list
+
+Get Chroma:
+docker pull chromadb/chroma:0.5.1.dev84 or docker pull curtisab/chatter-chroma:0.5.1.dev84
+mkdir chroma 
+docker run -d -p 8000:8000 -v chroma:/chroma/chroma -e ALLOW_RESET=TRUE --name chromadb chromadb/chroma:0.5.1.dev84
+docker run -d -p 8000:8000 -v chroma:/chroma/chroma -e ALLOW_RESET=TRUE --name chromadb curtisab/chatter-chroma:0.5.1.dev84
+test connection:  
+curl http://localhost:8000/api/v1 
+curl http://localhost:8000/api/v1/heartbeat
+curl http://192.168.0.63:8000/api/v1/collections
+
+
+Docker:
+docker build --tag curtisab/chatter-backend:0.4 .
+docker login
+docker push curtisab/chatter-backend:0.4
+docker run -d -p 5000:5000 --add-host huggingface.co:108.138.246.71 --add-host cdn-lfs.huggingface.co:18.238.192.50 --add-host cdn-lfs-us-1.huggingface.co:18.155.192.75 --name backend curtisab/chatter-backend:0.4
+docker run -d -p 5000:5000 --name backend curtisab/chatter-backend:0.4
