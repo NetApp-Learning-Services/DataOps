@@ -63,3 +63,7 @@ spec:
       - name: ollama-pvc
         persistentVolumeClaim: 
           claimName: chatter-pvc-ollama
+      hostAliases:
+      - ip: 172.67.187.229
+        hostnames:
+        - "registry.ollama.ai" 
